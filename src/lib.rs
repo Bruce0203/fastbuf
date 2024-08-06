@@ -6,6 +6,8 @@ pub trait BufMut {
 
 pub trait Buf {
     fn read(&mut self, len: usize) -> &[u8];
+    fn advance(&mut self, len: usize);
+    unsafe fn unfilled(&mut self, len: usize) -> &[u8];
 }
 
 pub struct Buffer<const N: usize> {
@@ -42,6 +44,19 @@ impl<const N: usize> Buf for Buffer<N> {
         let pos = self.pos;
         let new_pos = pos + len;
         self.pos = new_pos;
+        unsafe {
+            &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), new_pos)
+        }
+    }
+
+    fn advance(&mut self, len: usize) {
+        let pos = self.pos;
+        self.pos = pos + len;
+    }
+
+    unsafe fn unfilled(&mut self, len: usize) -> &[u8] {
+        let pos = self.pos;
+        let new_pos = pos + len;
         unsafe {
             &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), new_pos)
         }

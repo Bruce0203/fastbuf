@@ -1,10 +1,10 @@
 use std::mem::{transmute_copy, MaybeUninit};
 
-pub trait BufMut {
+pub trait WriteBuf {
     fn write(&mut self, data: &[u8]) -> Result<(), ()>;
 }
 
-pub trait Buf {
+pub trait ReadBuf {
     fn read(&mut self, len: usize) -> &[u8];
     fn advance(&mut self, len: usize);
     unsafe fn unfilled(&mut self, len: usize) -> &[u8];
@@ -26,7 +26,7 @@ impl<const N: usize> Buffer<N> {
     }
 }
 
-impl<const N: usize> BufMut for Buffer<N> {
+impl<const N: usize> WriteBuf for Buffer<N> {
     fn write(&mut self, data: &[u8]) -> Result<(), ()> {
         let new_filled_pos_len = self.filled_pos + data.len();
         if new_filled_pos_len < N {
@@ -39,7 +39,7 @@ impl<const N: usize> BufMut for Buffer<N> {
     }
 }
 
-impl<const N: usize> Buf for Buffer<N> {
+impl<const N: usize> ReadBuf for Buffer<N> {
     fn read(&mut self, len: usize) -> &[u8] {
         let pos = self.pos;
         let new_pos = pos + len;

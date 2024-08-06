@@ -1,0 +1,14 @@
+[package]
+name = "fastbuf"
+version = "0.1.0"
+edition = "2021"
+author = "Bruce0203 <brucefreedy@gmail.com>"
+description = "fast byte buffer with no async support"
+repository = "https://github.com/Bruce0203/fastbuf"
+license = "MIT"
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+]
+
+[dependencies]

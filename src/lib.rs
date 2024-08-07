@@ -1,5 +1,7 @@
 use std::mem::{transmute_copy, MaybeUninit};
 
+type LenUint = u32;
+
 pub trait WriteBuf {
     fn write(&mut self, data: &[u8]) -> Result<(), ()>;
 }
@@ -7,13 +9,14 @@ pub trait WriteBuf {
 pub trait ReadBuf {
     fn read(&mut self, len: usize) -> &[u8];
     fn advance(&mut self, len: usize);
-    unsafe fn unfilled(&mut self, len: usize) -> &[u8];
+
+    fn get_continuous(&self, len: usize) -> &[u8];
 }
 
 pub struct Buffer<const N: usize> {
     pub chunk: [u8; N],
-    pub filled_pos: usize,
-    pub pos: usize,
+    pub filled_pos: LenUint,
+    pub pos: LenUint,
 }
 
 impl<const N: usize> Buffer<N> {
@@ -28,10 +31,11 @@ impl<const N: usize> Buffer<N> {
 
 impl<const N: usize> WriteBuf for Buffer<N> {
     fn write(&mut self, data: &[u8]) -> Result<(), ()> {
-        let new_filled_pos_len = self.filled_pos + data.len();
+        let filled_pos = self.filled_pos as usize;
+        let new_filled_pos_len = filled_pos + data.len();
         if new_filled_pos_len < N {
-            self.chunk[self.filled_pos..new_filled_pos_len].copy_from_slice(data);
-            self.filled_pos = data.len();
+            self.chunk[filled_pos..new_filled_pos_len].copy_from_slice(data);
+            self.filled_pos = data.len() as LenUint;
             Ok(())
         } else {
             Err(())
@@ -41,21 +45,21 @@ impl<const N: usize> WriteBuf for Buffer<N> {
 
 impl<const N: usize> ReadBuf for Buffer<N> {
     fn read(&mut self, len: usize) -> &[u8] {
-        let pos = self.pos;
+        let pos = self.pos as usize;
         let new_pos = pos + len;
-        self.pos = new_pos;
+        self.pos = new_pos as LenUint;
         unsafe {
             &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), new_pos)
         }
     }
 
     fn advance(&mut self, len: usize) {
-        let pos = self.pos;
-        self.pos = pos + len;
+        let pos = self.pos as usize;
+        self.pos = (pos + len) as LenUint;
     }
 
-    unsafe fn unfilled(&mut self, len: usize) -> &[u8] {
-        let pos = self.pos;
+    fn get_continuous(&self, len: usize) -> &[u8] {
+        let pos = self.pos as usize;
         let new_pos = pos + len;
         unsafe {
             &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), new_pos)

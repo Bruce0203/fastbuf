@@ -60,9 +60,10 @@ impl<const N: usize> ReadBuf for Buffer<N> {
 
     fn get_continuous(&self, len: usize) -> &[u8] {
         let pos = self.pos as usize;
-        let new_pos = pos + len;
+        let filled_pos = self.filled_pos as usize;
+        let slice_len = std::cmp::min(pos + len, filled_pos - pos);
         unsafe {
-            &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), new_pos)
+            &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), slice_len)
         }
     }
 }

@@ -17,4 +17,4 @@ divan = "0.1.14"
 
 [[bench]]
 name = "benchmark"
-harnes = false
+harness = false

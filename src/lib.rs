@@ -9,6 +9,7 @@ pub trait WriteBuf {
 pub trait ReadBuf {
     fn read(&mut self, len: usize) -> &[u8];
     fn advance(&mut self, len: usize);
+    fn remaining(&self) -> usize;
 
     fn get_continuous(&self, len: usize) -> &[u8];
 }
@@ -65,5 +66,9 @@ impl<const N: usize> ReadBuf for Buffer<N> {
         unsafe {
             &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), slice_len)
         }
+    }
+
+    fn remaining(&self) -> usize {
+        (self.filled_pos - self.pos) as usize
     }
 }

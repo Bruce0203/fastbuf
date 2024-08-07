@@ -27,7 +27,8 @@ type LenUint = u32;
 #[divan::bench(args = [get_model()], sample_size = SAMPLE_SIZE, sample_count = SAMPLE_COUNT)]
 fn write_array_with_fastbuf_buffer(model: &Vec<u8>) {
     let mut buf = get_buf();
-    buf.write_many(&[&(model.len() as u16).to_be_bytes(), model]);
+    buf.write(&(model.len() as u16).to_be_bytes());
+    buf.write(model);
     black_box(&buf);
 }
 

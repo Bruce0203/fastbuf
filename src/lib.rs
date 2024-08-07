@@ -1,12 +1,15 @@
-use std::mem::{transmute_copy, MaybeUninit};
+extern crate core as std;
+
+use core::{
+    fmt::Debug,
+    mem::{transmute_copy, MaybeUninit},
+};
 
 type LenUint = u32;
 
 pub trait WriteBuf {
     fn write(&mut self, data: &[u8]) -> Result<(), ()>;
-    fn fill<F>(&mut self, len: usize, f: F)
-    where
-        F: FnOnce(&mut [u8]) -> usize;
+    fn write_many(&mut self, data: &[&[u8]]) -> Result<(), ()>;
 }
 
 pub trait ReadBuf {
@@ -20,6 +23,12 @@ pub struct Buffer<const N: usize> {
     pub chunk: [u8; N],
     pub filled_pos: LenUint,
     pub pos: LenUint,
+}
+
+impl<const N: usize> Debug for Buffer<N> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.chunk[self.pos as usize..self.filled_pos as usize].fmt(f)
+    }
 }
 
 impl<const N: usize> Buffer<N> {
@@ -52,26 +61,33 @@ impl<const N: usize> WriteBuf for Buffer<N> {
         }
     }
 
-    fn fill<F>(&mut self, len: usize, f: F)
-    where
-        F: FnOnce(&mut [u8]) -> usize,
-    {
-        let filled_pos = self.filled_pos as usize;
-        let slice_len = std::cmp::min(len, N - filled_pos);
-        unsafe {
-            let slice = &mut *core::ptr::slice_from_raw_parts_mut(
-                self.chunk.as_mut_ptr().offset(filled_pos as isize),
-                slice_len,
-            );
-            self.filled_pos = (filled_pos + f(slice)) as LenUint;
+    fn write_many(&mut self, data: &[&[u8]]) -> Result<(), ()> {
+        let mut filled_pos = self.filled_pos as usize;
+        let mut new_filled_pos_len = filled_pos;
+        {
+            let filled_pos = filled_pos;
+            let mut new_filled_pos_len = filled_pos;
+            for data in data.iter() {
+                new_filled_pos_len += data.len();
+            }
+            if new_filled_pos_len >= N {
+                return Err(());
+            }
         }
+        for data in data.iter() {
+            filled_pos = new_filled_pos_len;
+            new_filled_pos_len += data.len();
+            self.chunk[filled_pos..new_filled_pos_len].copy_from_slice(data);
+        }
+        self.filled_pos = new_filled_pos_len as LenUint;
+        Ok(())
     }
 }
 
 impl<const N: usize> ReadBuf for Buffer<N> {
     fn read(&mut self, len: usize) -> &[u8] {
         let pos = self.pos as usize;
-        let slice_len = std::cmp::min(len, self.filled_pos as usize - pos);
+        let slice_len = core::cmp::min(len, self.filled_pos as usize - pos);
         let new_pos = pos + slice_len;
         self.pos = new_pos as LenUint;
         unsafe {
@@ -81,13 +97,13 @@ impl<const N: usize> ReadBuf for Buffer<N> {
 
     fn advance(&mut self, len: usize) {
         let pos = self.pos as usize;
-        self.pos = std::cmp::min(self.filled_pos, (pos + len) as LenUint);
+        self.pos = core::cmp::min(self.filled_pos, (pos + len) as LenUint);
     }
 
     fn get_continuous(&self, len: usize) -> &[u8] {
         let pos = self.pos as usize;
         let filled_pos = self.filled_pos as usize;
-        let slice_len = std::cmp::min(len, filled_pos - pos);
+        let slice_len = core::cmp::min(len, filled_pos - pos);
         unsafe {
             &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), slice_len)
         }
@@ -96,4 +112,9 @@ impl<const N: usize> ReadBuf for Buffer<N> {
     fn remaining(&self) -> usize {
         (self.filled_pos - self.pos) as usize
     }
+}
+
+#[cfg(test)]
+mod test {
+    //TODO
 }

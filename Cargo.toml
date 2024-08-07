@@ -12,6 +12,7 @@ include = [
 ]
 
 [dev-dependencies]
+arrayvec = "0.7.4"
 divan = "0.1.14"
 fast_collections = "0.64.0"
 rand = "0.8.5"

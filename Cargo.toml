@@ -22,5 +22,5 @@ name = "benchmark"
 harness = false
 
 [profile.bench]
-# lto = true
+lto = true
 

@@ -1,24 +1,42 @@
+#![allow(soft_unstable)]
 #![feature(generic_arg_infer)]
 #![feature(const_mut_refs)]
 #![feature(generic_const_exprs)]
 
-use std::hint::black_box;
+use std::{hint::black_box, sync::LazyLock};
 
-use divan::{bench, Bencher};
-use fastbuf::{Buffer, ReadBuf, WriteBuf};
+use fast_collections::Cursor;
+use fastbuf::{Buffer, WriteBuf};
 use rand::Rng;
 
-#[bench]
-fn write_fastbuf(bencher: Bencher) {
-    let rand = rand::thread_rng().gen_range(0..10);
-    bencher.bench_local(|| {
-        let mut buf = Buffer::<10000>::new();
-        buf.pos = rand;
-        buf.filled_pos = rand;
-        buf.write(&[1, 2, 3, 4, 6, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2])
-            .unwrap();
-        black_box(&buf);
+const BUF_LEN: usize = 10000;
+
+static RAND_LEN: LazyLock<usize> = LazyLock::new(|| rand::thread_rng().gen_range(7..10));
+
+#[divan::bench(args = [get_model()])]
+fn write_array_with_fastbuf_buffer(model: &Vec<u8>) {
+    let mut buf = Buffer::<BUF_LEN>::new();
+    buf.fill(model.len(), |unfilled| {
+        unfilled.copy_from_slice(&model);
+        model.len()
     });
+    black_box(&buf);
+}
+
+#[divan::bench(args = [get_model()])]
+fn write_array_with_fast_collections_cursor(model: &Vec<u8>) {
+    let mut cur = Cursor::<u8, BUF_LEN>::new();
+    if model.len() < cur.capacity() - cur.filled_len() {
+        cur.as_array()[0..model.len()].copy_from_slice(model.as_slice());
+    }
+    black_box(&cur);
+}
+
+fn get_model() -> Vec<u8> {
+    let value = [*RAND_LEN as u8; 100];
+    let mut vec = value.to_vec();
+    unsafe { vec.set_len(*RAND_LEN as usize) };
+    vec
 }
 
 fn main() {

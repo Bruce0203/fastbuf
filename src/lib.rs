@@ -12,9 +12,8 @@ pub trait WriteBuf {
 pub trait ReadBuf {
     fn read(&mut self, len: usize) -> &[u8];
     fn advance(&mut self, len: usize);
-    fn remaining(&self) -> usize;
-
     fn get_continuous(&self, len: usize) -> &[u8];
+    fn remaining(&self) -> usize;
 }
 
 pub struct Buffer<const N: usize> {

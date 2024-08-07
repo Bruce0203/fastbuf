@@ -59,10 +59,11 @@ impl<const N: usize> WriteBuf for Buffer<N> {
         let filled_pos = self.filled_pos as usize;
         let slice_len = std::cmp::min(len, N - filled_pos);
         unsafe {
-            self.filled_pos = f(&mut *core::ptr::slice_from_raw_parts_mut(
+            let slice = &mut *core::ptr::slice_from_raw_parts_mut(
                 self.chunk.as_mut_ptr().offset(filled_pos as isize),
                 slice_len,
-            )) as LenUint;
+            );
+            self.filled_pos = (filled_pos + f(slice)) as LenUint;
         }
     }
 }

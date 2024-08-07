@@ -1,6 +1,6 @@
 [package]
 name = "fastbuf"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2021"
 author = "Bruce0203 <brucefreedy@gmail.com>"
 description = "fast byte buffer with no async support"
@@ -13,8 +13,14 @@ include = [
 
 [dev-dependencies]
 divan = "0.1.14"
+fast_collections = "0.64.0"
+rand = "0.8.5"
 
 
 [[bench]]
 name = "benchmark"
 harness = false
+
+[profile.bench]
+# lto = true
+

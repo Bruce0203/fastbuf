@@ -4,6 +4,7 @@ type LenUint = u32;
 
 pub trait WriteBuf {
     fn write(&mut self, data: &[u8]) -> Result<(), ()>;
+    fn get_unfilled(&mut self, len: usize) -> &mut [u8];
 }
 
 pub trait ReadBuf {
@@ -47,6 +48,17 @@ impl<const N: usize> WriteBuf for Buffer<N> {
             Ok(())
         } else {
             Err(())
+        }
+    }
+
+    fn get_unfilled(&mut self, len: usize) -> &mut [u8] {
+        let filled_pos = self.filled_pos as usize;
+        let slice_len = std::cmp::min(len, N - filled_pos);
+        unsafe {
+            &mut *core::ptr::slice_from_raw_parts_mut(
+                self.chunk.as_mut_ptr().offset(filled_pos as isize),
+                slice_len,
+            )
         }
     }
 }

@@ -36,7 +36,7 @@ impl<const N: usize> WriteBuf for Buffer<N> {
         let new_filled_pos_len = filled_pos + data.len();
         if new_filled_pos_len < N {
             self.chunk[filled_pos..new_filled_pos_len].copy_from_slice(data);
-            self.filled_pos = data.len() as LenUint;
+            self.filled_pos = new_filled_pos_len as LenUint;
             Ok(())
         } else {
             Err(())

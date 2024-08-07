@@ -21,6 +21,13 @@ pub struct Buffer<const N: usize> {
 }
 
 impl<const N: usize> Buffer<N> {
+    pub fn clear(&mut self) {
+        self.filled_pos = 0;
+        self.pos = 0;
+    }
+}
+
+impl<const N: usize> Buffer<N> {
     pub fn new() -> Self {
         Self {
             chunk: unsafe { transmute_copy(&MaybeUninit::<[u8; N]>::uninit()) },

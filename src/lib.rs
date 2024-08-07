@@ -55,13 +55,13 @@ impl<const N: usize> ReadBuf for Buffer<N> {
 
     fn advance(&mut self, len: usize) {
         let pos = self.pos as usize;
-        self.pos = (pos + len) as LenUint;
+        self.pos = std::cmp::min(self.filled_pos, (pos + len) as LenUint);
     }
 
     fn get_continuous(&self, len: usize) -> &[u8] {
         let pos = self.pos as usize;
         let filled_pos = self.filled_pos as usize;
-        let slice_len = std::cmp::min(pos + len, filled_pos - pos);
+        let slice_len = std::cmp::min(len, filled_pos - pos);
         unsafe {
             &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), slice_len)
         }

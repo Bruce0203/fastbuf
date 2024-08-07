@@ -10,12 +10,14 @@ type LenUint = u32;
 pub trait WriteBuf {
     fn write(&mut self, data: &[u8]);
     fn try_write(&mut self, data: &[u8]) -> Result<(), ()>;
+    fn remaining_space(&self) -> usize;
 }
 
 pub trait ReadBuf {
     fn read(&mut self, len: usize) -> &[u8];
     fn advance(&mut self, len: usize);
     fn get_continuous(&self, len: usize) -> &[u8];
+    fn remaining(&self) -> usize;
 }
 
 pub struct Buffer<const N: usize> {
@@ -35,10 +37,6 @@ impl<const N: usize> Buffer<N> {
         self.filled_pos = 0;
         self.pos = 0;
     }
-
-    pub fn remaining(&self) -> usize {
-        (self.filled_pos - self.pos) as usize
-    }
 }
 
 impl<const N: usize> Buffer<N> {
@@ -56,7 +54,8 @@ impl<const N: usize> WriteBuf for Buffer<N> {
         let filled_pos = self.filled_pos as usize;
         let new_filled_pos_len = filled_pos + data.len();
         if new_filled_pos_len < N {
-            self.chunk[filled_pos..new_filled_pos_len].copy_from_slice(data);
+            let dst = unsafe { self.chunk.get_unchecked_mut(filled_pos..new_filled_pos_len) };
+            dst.copy_from_slice(data);
             self.filled_pos = new_filled_pos_len as LenUint;
             Ok(())
         } else {
@@ -69,6 +68,10 @@ impl<const N: usize> WriteBuf for Buffer<N> {
         let new_filled_pos_len = filled_pos + data.len();
         self.chunk[filled_pos..new_filled_pos_len].copy_from_slice(data);
         self.filled_pos = new_filled_pos_len as LenUint;
+    }
+
+    fn remaining_space(&self) -> usize {
+        N - self.filled_pos as usize
     }
 }
 
@@ -95,6 +98,10 @@ impl<const N: usize> ReadBuf for Buffer<N> {
         unsafe {
             &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), slice_len)
         }
+    }
+
+    fn remaining(&self) -> usize {
+        (self.filled_pos - self.pos) as usize
     }
 }
 

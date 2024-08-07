@@ -70,9 +70,9 @@ impl<const N: usize> WriteBuf for Buffer<N> {
 impl<const N: usize> ReadBuf for Buffer<N> {
     fn read(&mut self, len: usize) -> &[u8] {
         let pos = self.pos as usize;
-        let new_pos = pos + len;
-        self.pos = new_pos as LenUint;
         let slice_len = std::cmp::min(len, self.filled_pos as usize - pos);
+        let new_pos = pos + slice_len;
+        self.pos = new_pos as LenUint;
         unsafe {
             &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), slice_len)
         }

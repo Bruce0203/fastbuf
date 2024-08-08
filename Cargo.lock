@@ -113,6 +113,7 @@ dependencies = [
  "divan",
  "fast_collections",
  "rand",
+ "varuint",
 ]
 
 [[package]]
@@ -240,6 +241,12 @@ name = "unicode-ident"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
+
+[[package]]
+name = "varuint"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa87b6bf001aaee248041a8fd176b6ed105b5ff78a8d13b4aa2f644660b3031d"
 
 [[package]]
 name = "wasi"

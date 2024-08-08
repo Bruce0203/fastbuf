@@ -25,3 +25,6 @@ harness = false
 [profile.bench]
 lto = true
 
+[dependencies]
+varuint = "0.7.1"
+

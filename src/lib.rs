@@ -1,5 +1,3 @@
-extern crate core as std;
-
 use core::{
     fmt::Debug,
     mem::{transmute_copy, MaybeUninit},
@@ -21,9 +19,9 @@ pub trait ReadBuf {
 }
 
 pub struct Buffer<const N: usize> {
-    pub chunk: [u8; N],
-    pub filled_pos: LenUint,
-    pub pos: LenUint,
+    chunk: [u8; N],
+    filled_pos: LenUint,
+    pos: LenUint,
 }
 
 impl<const N: usize> Debug for Buffer<N> {
@@ -100,6 +98,25 @@ impl<const N: usize> ReadBuf for Buffer<N> {
 
     fn remaining(&self) -> usize {
         (self.filled_pos - self.pos) as usize
+    }
+}
+
+pub trait ReadToBuf {
+    fn read_to_buf<const N: usize>(&mut self, buf: &mut Buffer<N>) -> Result<(), ()>;
+}
+
+impl<T: std::io::Read> ReadToBuf for T {
+    fn read_to_buf<const N: usize>(&mut self, buf: &mut Buffer<N>) -> Result<(), ()> {
+        let filled_pos = buf.filled_pos as usize;
+        let slice = unsafe {
+            &mut *core::ptr::slice_from_raw_parts_mut(
+                buf.chunk.as_mut_ptr().offset(filled_pos as isize),
+                N - filled_pos,
+            )
+        };
+        let read_length = self.read(slice).map_err(|_| ())?;
+        buf.filled_pos = (filled_pos + read_length) as u32;
+        Ok(())
     }
 }
 

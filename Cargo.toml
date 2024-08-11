@@ -1,6 +1,6 @@
 [package]
 name = "fastbuf"
-version = "0.13.0"
+version = "0.14.0"
 edition = "2021"
 author = "Bruce0203 <brucefreedy@gmail.com>"
 description = "fast byte buffer with no async support"
@@ -17,6 +17,9 @@ divan = "0.1.14"
 fast_collections = "0.64.0"
 rand = "0.8.5"
 
+[features]
+default = ["std"]
+std = []
 
 [[bench]]
 name = "benchmark"

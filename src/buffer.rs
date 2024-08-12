@@ -42,11 +42,11 @@ impl<const N: usize> Buf for Buffer<N> {
         self.pos = value as u32;
     }
 
-    fn filled_len(&self) -> usize {
+    fn filled_pos(&self) -> usize {
         self.filled_pos as usize
     }
 
-    unsafe fn set_filled_len(&mut self, value: usize) {
+    unsafe fn set_filled_pos(&mut self, value: usize) {
         self.filled_pos = value as u32;
     }
 }

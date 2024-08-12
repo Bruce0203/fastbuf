@@ -1,7 +1,7 @@
 pub trait Buf {
     fn pos(&self) -> usize;
-    fn filled_len(&self) -> usize;
-    unsafe fn set_filled_len(&mut self, value: usize);
+    fn filled_pos(&self) -> usize;
+    unsafe fn set_filled_pos(&mut self, value: usize);
     unsafe fn set_pos(&mut self, value: usize);
 }
 

@@ -32,6 +32,22 @@ impl<const N: usize> Buffer<N> {
             pos: 0,
         }
     }
+
+    pub fn pos(&self) -> usize {
+        self.pos as usize
+    }
+
+    pub fn set_pos(&mut self, value: usize) {
+        self.pos = value as u32;
+    }
+
+    pub fn filled_len(&self) -> usize {
+        self.filled_pos as usize
+    }
+
+    pub unsafe fn set_filled_len(&mut self, value: usize) {
+        self.filled_pos = value as u32;
+    }
 }
 
 impl<const N: usize> WriteBuf for Buffer<N> {
@@ -57,10 +73,6 @@ impl<const N: usize> WriteBuf for Buffer<N> {
 
     fn remaining_space(&self) -> usize {
         N - self.filled_pos as usize
-    }
-
-    unsafe fn filled_len_mut(&mut self) -> &mut u32 {
-        &mut self.filled_pos
     }
 }
 

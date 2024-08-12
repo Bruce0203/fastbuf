@@ -15,7 +15,7 @@ pub struct Buffer<const N: usize> {
 
 impl<const N: usize> Debug for Buffer<N> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.chunk[self.pos as usize..self.filled_pos as usize].fmt(f)
+        self.chunk[self.pos as usize..self.filled_pos as usize].to_vec().fmt(f)
     }
 }
 

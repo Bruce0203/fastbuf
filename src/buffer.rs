@@ -20,11 +20,6 @@ impl<const N: usize> Debug for Buffer<N> {
 }
 
 impl<const N: usize> Buffer<N> {
-    pub fn clear(&mut self) {
-        self.filled_pos = 0;
-        self.pos = 0;
-    }
-
     pub fn new() -> Self {
         Self {
             chunk: unsafe { transmute_copy(&MaybeUninit::<[u8; N]>::uninit()) },
@@ -34,6 +29,11 @@ impl<const N: usize> Buffer<N> {
     }
 }
 impl<const N: usize> Buf for Buffer<N> {
+    fn clear(&mut self) {
+        self.filled_pos = 0;
+        self.pos = 0;
+    }
+
     fn pos(&self) -> usize {
         self.pos as usize
     }

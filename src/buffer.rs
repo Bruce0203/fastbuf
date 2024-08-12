@@ -3,7 +3,7 @@ use core::{
     mem::{transmute_copy, MaybeUninit},
 };
 
-use crate::{ReadBuf, WriteBuf};
+use crate::{Buf, ReadBuf, WriteBuf};
 
 type LenUint = u32;
 
@@ -32,20 +32,21 @@ impl<const N: usize> Buffer<N> {
             pos: 0,
         }
     }
-
-    pub fn pos(&self) -> usize {
+}
+impl<const N: usize> Buf for Buffer<N> {
+    fn pos(&self) -> usize {
         self.pos as usize
     }
 
-    pub fn set_pos(&mut self, value: usize) {
+    unsafe fn set_pos(&mut self, value: usize) {
         self.pos = value as u32;
     }
 
-    pub fn filled_len(&self) -> usize {
+    fn filled_len(&self) -> usize {
         self.filled_pos as usize
     }
 
-    pub unsafe fn set_filled_len(&mut self, value: usize) {
+    unsafe fn set_filled_len(&mut self, value: usize) {
         self.filled_pos = value as u32;
     }
 }

@@ -121,6 +121,9 @@ impl<T: std::io::Read> ReadToBuf for T {
             )
         };
         let read_length = self.read(slice).map_err(|_| ())?;
+        if read_length == 0 {
+            Err(())?
+        }
         buf.filled_pos = (filled_pos + read_length) as u32;
         Ok(())
     }

@@ -131,10 +131,10 @@ impl<T: std::io::Read> ReadToBuf for T {
 }
 
 impl<const N: usize> std::io::Write for Buffer<N> {
-    default fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let backup_filled_pos = self.filled_pos();
         self.try_write(buf)
-            .map_err(|_| io::Error::new(io::ErrorKind::Uncategorized, ""))?;
+            .map_err(|_| io::Error::new(io::ErrorKind::Other, "write buffer failed"))?;
         Ok(self.filled_pos() - backup_filled_pos)
     }
 

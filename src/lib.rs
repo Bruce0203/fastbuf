@@ -1,6 +1,3 @@
-#![feature(min_specialization)]
-#![feature(io_error_uncategorized)]
-
 mod traits;
 
 pub use traits::*;

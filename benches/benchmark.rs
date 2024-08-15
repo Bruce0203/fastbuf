@@ -10,7 +10,7 @@ use std::{
 };
 
 use fast_collections::Cursor;
-use fastbuf::{Buffer, ReadBuf, WriteBuf};
+use fastbuf::{Buf, Buffer, ReadBuf, WriteBuf};
 use rand::Rng;
 
 pub const SAMPLE_SIZE: u32 = 1000;
@@ -82,8 +82,8 @@ fn get_model() -> Vec<u8> {
 
 fn get_buf() -> Buffer<BUF_LEN> {
     let mut buf = Buffer::<BUF_LEN>::new();
-    buf.filled_pos = *RAND_LEN as LenUint + 100;
-    buf.pos = *RAND_LEN as LenUint;
+    unsafe { buf.set_filled_pos(*RAND_LEN + 100) };
+    unsafe { buf.set_pos(*RAND_LEN) };
     buf
 }
 

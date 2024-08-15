@@ -2,6 +2,7 @@ use core::{
     fmt::Debug,
     mem::{transmute_copy, MaybeUninit},
 };
+use std::io;
 
 use crate::{Buf, ReadBuf, WriteBuf};
 
@@ -129,3 +130,15 @@ impl<T: std::io::Read> ReadToBuf for T {
     }
 }
 
+impl<const N: usize> std::io::Write for Buffer<N> {
+    default fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let backup_filled_pos = self.filled_pos();
+        self.try_write(buf)
+            .map_err(|_| io::Error::new(io::ErrorKind::Uncategorized, ""))?;
+        Ok(self.filled_pos() - backup_filled_pos)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}

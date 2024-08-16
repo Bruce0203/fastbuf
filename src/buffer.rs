@@ -28,7 +28,16 @@ impl<const N: usize> Buffer<N> {
             pos: 0,
         }
     }
+
+    pub fn to_slice(&self) -> &[u8; N] {
+        &self.chunk
+    }
+
+    pub fn to_slice_mut(&mut self) -> &mut [u8; N] {
+        &mut self.chunk
+    }
 }
+
 impl<const N: usize> Buf for Buffer<N> {
     fn clear(&mut self) {
         self.filled_pos = 0;

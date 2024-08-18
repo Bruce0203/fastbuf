@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-pub trait Buf {
+pub trait Buf: ReadBuf + WriteBuf {
     fn clear(&mut self);
     fn pos(&self) -> usize;
     fn filled_pos(&self) -> usize;
@@ -8,13 +8,13 @@ pub trait Buf {
     unsafe fn set_pos(&mut self, value: usize);
 }
 
-pub trait WriteBuf: Buf {
+pub trait WriteBuf {
     fn write(&mut self, data: &[u8]);
     fn try_write(&mut self, data: &[u8]) -> Result<(), ()>;
     fn remaining_space(&self) -> usize;
 }
 
-pub trait ReadBuf: Buf {
+pub trait ReadBuf {
     fn read(&mut self, len: usize) -> &[u8];
     fn advance(&mut self, len: usize);
     fn get_continuous(&self, len: usize) -> &[u8];

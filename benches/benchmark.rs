@@ -25,6 +25,15 @@ static RAND_LEN: LazyLock<usize> = LazyLock::new(|| rand::thread_rng().gen_range
 type LenUint = u32;
 
 #[divan::bench(args = [get_model()], sample_size = SAMPLE_SIZE, sample_count = SAMPLE_COUNT)]
+fn write_array_with_fastbuf_buffer_with_io_mod(model: &Vec<u8>) -> Result<(), std::io::Error> {
+    let mut buf = get_buf();
+    std::io::Write::write(&mut buf, &(model.len() as u16).to_be_bytes()).unwrap();
+    std::io::Write::write(&mut buf, model).unwrap();
+    black_box(&buf);
+    Ok(())
+}
+
+#[divan::bench(args = [get_model()], sample_size = SAMPLE_SIZE, sample_count = SAMPLE_COUNT)]
 fn write_array_with_fastbuf_buffer(model: &Vec<u8>) {
     let mut buf = get_buf();
     buf.write(&(model.len() as u16).to_be_bytes());

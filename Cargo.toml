@@ -1,6 +1,6 @@
 [package]
 name = "fastbuf"
-version = "0.25.0"
+version = "0.26.0"
 edition = "2021"
 author = "Bruce0203 <brucefreedy@gmail.com>"
 description = "fast byte buffer with no async support"
@@ -21,13 +21,16 @@ rand = "0.8.5"
 default = ["std"]
 std = []
 
+# [[bench]]
+# name = "sandbox"
+# harness = false
+
 [[bench]]
-name = "benchmark"
+name = "compare_write_vs_try_write"
 harness = false
 
 [profile.bench]
 lto = true
 
 [dependencies]
-varuint = "0.7.1"
-
+embedded-io = "0.6.1"

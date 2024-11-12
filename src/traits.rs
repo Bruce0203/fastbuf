@@ -1,5 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
+use crate::Buffer;
+
 pub trait Buf: ReadBuf + WriteBuf {
     fn clear(&mut self);
     fn pos(&self) -> usize;

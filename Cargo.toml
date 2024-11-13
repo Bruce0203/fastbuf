@@ -19,6 +19,7 @@ rand = "0.8.5"
 
 [features]
 default = ["std"]
+embedded-io = ["dep:embedded-io"]
 std = []
 
 # [[bench]]
@@ -33,4 +34,4 @@ harness = false
 lto = true
 
 [dependencies]
-embedded-io = "0.6.1"
+embedded-io = { version = "0.6.1", optional = true }

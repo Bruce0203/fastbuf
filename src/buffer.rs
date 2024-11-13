@@ -4,8 +4,6 @@ use core::{
 };
 use std::io;
 
-use embedded_io::{Error, ErrorType};
-
 use crate::{Buf, ReadBuf, WriteBuf};
 
 type LenUint = u32;
@@ -211,12 +209,14 @@ impl<'a, const N: usize> Buf for &'a mut Buffer<N> {
 #[derive(Debug)]
 pub enum BufferError {}
 
-impl Error for BufferError {
+#[cfg(feature = "embedded-io")]
+impl embedded_io::Error for BufferError {
     fn kind(&self) -> embedded_io::ErrorKind {
         todo!()
     }
 }
 
-impl<const N: usize> ErrorType for Buffer<N> {
+#[cfg(feature = "embedded-io")]
+impl<const N: usize> embedded_io::ErrorType for Buffer<N> {
     type Error = BufferError;
 }

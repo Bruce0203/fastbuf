@@ -113,7 +113,7 @@ checksum = "1ec71380023eaa7d255ea09b6c68a85866ab8f23c0d3540cefd5de7a50205c2c"
 
 [[package]]
 name = "fastbuf"
-version = "0.26.0"
+version = "0.27.0"
 dependencies = [
  "arrayvec",
  "divan",

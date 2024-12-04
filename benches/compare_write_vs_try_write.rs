@@ -6,16 +6,22 @@ use fastbuf::{Buffer, WriteBuf};
 #[bench(sample_size = 10000, sample_count = 10000)]
 fn bench_try_write(bencher: Bencher) {
     bencher.bench_local(|| {
-        let mut buf = Buffer::<200000>::new();
-        let _ = black_box(buf.try_write(&[1]));
+        for _i in 0..100 {
+            let mut buf = Buffer::<200000>::new();
+            let _ = black_box(buf.try_write(&[1]));
+            black_box(&buf);
+        }
     });
 }
 
 #[bench(sample_size = 10000, sample_count = 10000)]
 fn bench_write(bencher: Bencher) {
     bencher.bench_local(|| {
-        let mut buf = Buffer::<200000>::new();
-        let _ = black_box(buf.write(&[1]));
+        for _i in 0..100 {
+            let mut buf = Buffer::<200000>::new();
+            buf.write(&[1]);
+            black_box(&buf);
+        }
     });
 }
 

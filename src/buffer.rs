@@ -152,60 +152,6 @@ impl<const N: usize> std::io::Write for Buffer<N> {
     }
 }
 
-impl<'a, const N: usize> ReadBuf for &'a mut Buffer<N> {
-    fn read(&mut self, len: usize) -> &[u8] {
-        (**self).read(len)
-    }
-
-    fn advance(&mut self, len: usize) {
-        (**self).advance(len)
-    }
-
-    fn get_continuous(&self, len: usize) -> &[u8] {
-        (**self).get_continuous(len)
-    }
-
-    fn remaining(&self) -> usize {
-        (**self).remaining()
-    }
-}
-
-impl<'a, const N: usize> WriteBuf for &'a mut Buffer<N> {
-    fn write(&mut self, data: &[u8]) {
-        (**self).write(data)
-    }
-
-    fn try_write(&mut self, data: &[u8]) -> Result<(), ()> {
-        (**self).try_write(data)
-    }
-
-    fn remaining_space(&self) -> usize {
-        (**self).remaining_space()
-    }
-}
-
-impl<'a, const N: usize> Buf for &'a mut Buffer<N> {
-    fn clear(&mut self) {
-        (**self).clear()
-    }
-
-    fn pos(&self) -> usize {
-        (**self).pos()
-    }
-
-    fn filled_pos(&self) -> usize {
-        (**self).filled_pos()
-    }
-
-    unsafe fn set_filled_pos(&mut self, value: usize) {
-        (**self).set_filled_pos(value)
-    }
-
-    unsafe fn set_pos(&mut self, value: usize) {
-        (**self).set_pos(value)
-    }
-}
-
 #[derive(Debug)]
 pub enum BufferError {}
 

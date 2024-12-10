@@ -56,6 +56,11 @@ impl<const N: usize> Buf for Buffer<N> {
         self.filled_pos as usize
     }
 
+    fn advance(&mut self, len: usize) {
+        let pos = self.pos as usize;
+        self.pos = core::cmp::min(self.filled_pos, (pos + len) as LenUint);
+    }
+
     unsafe fn set_filled_pos(&mut self, value: usize) {
         self.filled_pos = value as u32;
     }
@@ -96,11 +101,6 @@ impl<const N: usize> ReadBuf for Buffer<N> {
         unsafe {
             &*core::ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), slice_len)
         }
-    }
-
-    fn advance(&mut self, len: usize) {
-        let pos = self.pos as usize;
-        self.pos = core::cmp::min(self.filled_pos, (pos + len) as LenUint);
     }
 
     fn get_continuous(&self, len: usize) -> &[u8] {

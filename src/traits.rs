@@ -6,6 +6,7 @@ pub trait Buf: ReadBuf + WriteBuf {
     fn clear(&mut self);
     fn pos(&self) -> usize;
     fn filled_pos(&self) -> usize;
+    fn advance(&mut self, len: usize);
     unsafe fn set_filled_pos(&mut self, value: usize);
     unsafe fn set_pos(&mut self, value: usize);
 }
@@ -18,7 +19,6 @@ pub trait WriteBuf {
 
 pub trait ReadBuf {
     fn read(&mut self, len: usize) -> &[u8];
-    fn advance(&mut self, len: usize);
     fn get_continuous(&self, len: usize) -> &[u8];
     fn remaining(&self) -> usize;
 }
@@ -36,6 +36,10 @@ impl<T: Buf> Buf for Box<T> {
         self.deref().filled_pos()
     }
 
+    fn advance(&mut self, len: usize) {
+        self.deref_mut().advance(len)
+    }
+
     unsafe fn set_filled_pos(&mut self, value: usize) {
         self.deref_mut().set_filled_pos(value)
     }
@@ -48,10 +52,6 @@ impl<T: Buf> Buf for Box<T> {
 impl<T: ReadBuf> ReadBuf for Box<T> {
     fn read(&mut self, len: usize) -> &[u8] {
         self.deref_mut().read(len)
-    }
-
-    fn advance(&mut self, len: usize) {
-        self.deref_mut().advance(len)
     }
 
     fn get_continuous(&self, len: usize) -> &[u8] {
@@ -90,6 +90,10 @@ impl<T: Buf> Buf for &mut T {
         self.deref().filled_pos()
     }
 
+    fn advance(&mut self, len: usize) {
+        self.deref_mut().advance(len)
+    }
+
     unsafe fn set_filled_pos(&mut self, value: usize) {
         self.deref_mut().set_filled_pos(value)
     }
@@ -102,10 +106,6 @@ impl<T: Buf> Buf for &mut T {
 impl<T: ReadBuf> ReadBuf for &mut T {
     fn read(&mut self, len: usize) -> &[u8] {
         self.deref_mut().read(len)
-    }
-
-    fn advance(&mut self, len: usize) {
-        self.deref_mut().advance(len)
     }
 
     fn get_continuous(&self, len: usize) -> &[u8] {

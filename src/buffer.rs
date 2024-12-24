@@ -155,9 +155,10 @@ impl<const N: usize> WriteBuf for Buffer<N> {
         }
         self.filled_pos = new_filled_pos_len as LenUint;
         unsafe {
-            let dst = self.chunk.as_mut_ptr().wrapping_add(filled_pos);
-            let src = data.as_ptr();
-            dst.copy_from_nonoverlapping(src, len)
+            self.chunk
+                .as_mut_ptr()
+                .wrapping_add(filled_pos)
+                .copy_from_nonoverlapping(data.as_ptr(), len);
         };
         Ok(())
     }

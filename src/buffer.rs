@@ -134,12 +134,16 @@ impl<const N: usize> WriteBuf for Buffer<N> {
         if new_filled_pos <= N {
             unsafe {
                 match self.chunk {
-                    RawBuffer::Slice(mut slice) => {
+                    RawBuffer::Slice(ref mut slice) => {
                         slice
                             .get_unchecked_mut(filled_pos..new_filled_pos)
                             .copy_from_slice(data);
                     }
-                    _ => unreachable!(),
+                    RawBuffer::Boxed(ref mut boxed) => {
+                        boxed
+                            .get_unchecked_mut(filled_pos..new_filled_pos)
+                            .copy_from_slice(data);
+                    }
                 }
             }
             self.filled_pos = new_filled_pos as LenUint;

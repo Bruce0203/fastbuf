@@ -67,6 +67,7 @@ impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> WriteBuf for Buffer<N, A,
             unsafe {
                 self.chunk
                     .as_mut_ptr()
+                    .wrapping_add(filled_pos as usize)
                     .copy_from_nonoverlapping(data.as_ptr(), len);
             }
             Ok(())

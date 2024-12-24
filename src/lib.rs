@@ -17,5 +17,3 @@ pub use traits::*;
 
 mod buffer;
 pub use buffer::*;
-
-mod fast_slice;

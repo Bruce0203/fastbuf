@@ -64,7 +64,12 @@ impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> WriteBuf for Buffer<N, A,
         let new_filled_pos = filled_pos + data.len();
         if new_filled_pos <= N {
             self.filled_pos = new_filled_pos as LenUint;
-            self.chunk.as_mut_slice()[filled_pos..new_filled_pos].copy_from_slice(data);
+            unsafe {
+                self.chunk
+                    .as_mut_slice()
+                    .get_unchecked_mut(filled_pos..new_filled_pos)
+                    .copy_from_slice(data);
+            }
             Ok(())
         } else {
             Err(WriteBufferError::BufferFull)
@@ -74,8 +79,8 @@ impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> WriteBuf for Buffer<N, A,
     fn write(&mut self, data: &[u8]) {
         let filled_pos = self.filled_pos as usize;
         let new_filled_pos_len = filled_pos + data.len();
-        self.filled_pos = new_filled_pos_len as LenUint;
         self.chunk.as_mut_slice()[filled_pos..new_filled_pos_len].copy_from_slice(data);
+        self.filled_pos = new_filled_pos_len as LenUint;
     }
 
     fn remaining_space(&self) -> usize {

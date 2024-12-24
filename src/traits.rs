@@ -9,7 +9,7 @@ pub trait Buf: ReadBuf + WriteBuf {
 
 pub trait WriteBuf {
     fn write(&mut self, data: &[u8]);
-    fn try_write(&mut self, data: &[u8]) -> Result<(), ()>;
+    fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError>;
     fn remaining_space(&self) -> usize;
     fn filled_pos(&self) -> usize;
     unsafe fn set_filled_pos(&mut self, filled_pos: usize);
@@ -32,6 +32,7 @@ pub trait ReadToBuf {
 pub enum WriteBufferError {
     BufferFull,
 }
+
 
 impl<T: Buf> Buf for &mut T {
     fn clear(&mut self) {
@@ -82,7 +83,7 @@ impl<T: WriteBuf> WriteBuf for &mut T {
         self.deref_mut().write(data)
     }
 
-    fn try_write(&mut self, data: &[u8]) -> Result<(), ()> {
+    fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError> {
         self.deref_mut().try_write(data)
     }
 

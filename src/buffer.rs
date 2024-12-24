@@ -128,20 +128,20 @@ impl<const N: usize> Buf for Buffer<N> {
 }
 
 impl<const N: usize> WriteBuf for Buffer<N> {
-    fn try_write(&mut self, data: &[u8]) -> Result<(), ()> {
+    fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError> {
         let filled_pos = self.filled_pos as usize;
         let new_filled_pos_len = filled_pos + data.len();
         if new_filled_pos_len < N {
-            let dst = unsafe {
+            unsafe {
                 self.chunk
                     .to_slice_mut()
                     .get_unchecked_mut(filled_pos..new_filled_pos_len)
-            };
-            dst.copy_from_slice(data);
+                    .copy_from_slice(data);
+            }
             self.filled_pos = new_filled_pos_len as LenUint;
             Ok(())
         } else {
-            Err(())
+            Err(WriteBufferError::BufferFull)
         }
     }
 

@@ -128,7 +128,7 @@ impl<const N: usize> Buf for Buffer<N> {
 }
 
 impl<const N: usize> WriteBuf for Buffer<N> {
-    fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError> {
+    fn try_write(&mut self, data: &[u8]) -> Result<(), ()> {
         let filled_pos = self.filled_pos as usize;
         let new_filled_pos_len = filled_pos + data.len();
         if new_filled_pos_len < N {
@@ -141,7 +141,7 @@ impl<const N: usize> WriteBuf for Buffer<N> {
             self.filled_pos = new_filled_pos_len as LenUint;
             Ok(())
         } else {
-            Err(WriteBufferError::BufferFull)
+            Err(())
         }
     }
 

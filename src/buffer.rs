@@ -1,4 +1,4 @@
-use core::{fmt::Debug, marker::PhantomData, ptr};
+use core::{fmt::Debug, marker::PhantomData, ptr::slice_from_raw_parts};
 use std::{
     alloc::{Allocator, Global},
     ptr::slice_from_raw_parts_mut,
@@ -102,14 +102,14 @@ impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> ReadBuf for Buffer<N, A, 
         let slice_len = core::cmp::min(len, self.filled_pos as usize - pos);
         let new_pos = pos + slice_len;
         self.pos = new_pos as LenUint;
-        unsafe { &*ptr::slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos as usize), slice_len) }
+        unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos as usize), slice_len) }
     }
 
     unsafe fn get_continuous(&self, len: usize) -> &[u8] {
         let pos = self.pos as usize;
         let filled_pos = self.filled_pos as usize;
         let slice_len = core::cmp::min(len, filled_pos - pos);
-        unsafe { &*ptr::slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
+        unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
     }
 
     fn remaining(&self) -> usize {

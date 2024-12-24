@@ -1,8 +1,8 @@
 use core::{
     fmt::Debug,
     marker::PhantomData,
-    mem::{transmute, MaybeUninit},
-    ops::{Deref, DerefMut, Index, IndexMut, Range},
+    mem::MaybeUninit,
+    ops::{Deref, DerefMut},
     ptr,
 };
 use std::{
@@ -12,7 +12,7 @@ use std::{
 
 use crate::{Buf, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError};
 
-pub type BoxedBuffer<const N: usize, A: Allocator = Global> = Buffer<N, A, Box<[u8; N]>>;
+pub type BoxedBuffer<const N: usize, A = Global> = Buffer<N, A, Box<[u8; N]>>;
 
 pub struct Buffer<const N: usize, A: Allocator = Global, C: Chunk<u8, N, A> = [u8; N]> {
     chunk: C,
@@ -276,7 +276,7 @@ mod tests {
             assert_eq!(buffer.remaining_space(), 11);
         }
         }
-        
+
         test!(Buffer::<16>::new());
         test!(BoxedBuffer::<16, Global>::new());
     }
@@ -292,7 +292,7 @@ mod tests {
             assert_eq!(buffer.remaining_space(), 8);
             buffer.try_write(&[]).unwrap();
         }}
-        
+
         test!(Buffer::<8>::new());
         test!(BoxedBuffer::<8, Global>::new());
     }
@@ -309,7 +309,7 @@ mod tests {
             assert_eq!(buffer.remaining_space(), 16);
             assert_eq!(buffer.remaining(), 0);
         }}
-        
+
         test!(Buffer::<16>::new());
         test!(BoxedBuffer::<16, Global>::new());
     }
@@ -328,7 +328,7 @@ mod tests {
             let remaining_data = buffer.read(5);
             assert_eq!(remaining_data, b"world");
         }}
-        
+
         test!(Buffer::<16>::new());
         test!(BoxedBuffer::<16, Global>::new());
     }
@@ -344,7 +344,7 @@ mod tests {
             let continuous_data = unsafe { buffer.get_continuous(5) };
             assert_eq!(continuous_data, b"hello");
         }}
-        
+
         test!(Buffer::<16>::new());
         test!(BoxedBuffer::<16, Global>::new());
     }

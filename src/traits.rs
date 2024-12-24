@@ -33,7 +33,6 @@ pub enum WriteBufferError {
     BufferFull,
 }
 
-
 impl<T: Buf> Buf for &mut T {
     fn clear(&mut self) {
         self.deref_mut().clear()

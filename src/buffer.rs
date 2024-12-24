@@ -1,7 +1,8 @@
 use core::{
     fmt::Debug,
+    marker::PhantomData,
     mem::{transmute, MaybeUninit},
-    ops::{Index, IndexMut, Range},
+    ops::{Deref, DerefMut, Index, IndexMut, Range},
     ptr,
 };
 use std::{
@@ -11,104 +12,92 @@ use std::{
 
 use crate::{Buf, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError};
 
-enum RawBuffer<T, const N: usize, A: Allocator = Global> {
-    Slice([T; N]),
-    Boxed(Box<[T; N], A>),
-}
+pub type BoxedBuffer<const N: usize, A: Allocator = Global> = Buffer<N, A, Box<[u8; N]>>;
 
-impl<T, const N: usize> RawBuffer<T, N> {
-    pub fn new_boxed() -> Self {
-        Self::Boxed(unsafe { Box::<[T; N]>::new_zeroed().assume_init() })
-    }
-}
-
-impl<A: Allocator, T, const N: usize> RawBuffer<T, N, A> {
-    pub fn new() -> Self {
-        Self::Slice(unsafe { MaybeUninit::uninit().assume_init() })
-    }
-
-    pub fn new_boxed_in(alloc: A) -> Self {
-        Self::Boxed(unsafe { Box::new_uninit_in(alloc).assume_init() })
-    }
-
-    pub fn as_ptr(&self) -> *const T {
-        match self {
-            RawBuffer::Slice(slice) => slice.as_ptr(),
-            RawBuffer::Boxed(boxed) => boxed.as_ptr(),
-        }
-    }
-
-    pub fn as_mut_ptr(&mut self) -> *mut T {
-        match self {
-            RawBuffer::Slice(slice) => slice.as_mut_ptr(),
-            RawBuffer::Boxed(boxed) => boxed.as_mut_ptr(),
-        }
-    }
-
-    pub fn to_slice(&self) -> &[T; N] {
-        match self {
-            RawBuffer::Slice(slice) => slice,
-            RawBuffer::Boxed(boxed) => &**boxed,
-        }
-    }
-
-    pub fn to_slice_mut(&mut self) -> &mut [T; N] {
-        match self {
-            RawBuffer::Slice(slice) => slice,
-            RawBuffer::Boxed(boxed) => &mut **boxed,
-        }
-    }
-}
-
-impl<T, const N: usize, A: Allocator> Index<Range<usize>> for RawBuffer<T, N, A> {
-    type Output = [T];
-
-    fn index(&self, index: Range<usize>) -> &Self::Output {
-        self.to_slice().index(index)
-    }
-}
-
-impl<T, const N: usize, A: Allocator> IndexMut<Range<usize>> for RawBuffer<T, N, A> {
-    fn index_mut(&mut self, index: Range<usize>) -> &mut Self::Output {
-        self.to_slice_mut().index_mut(index)
-    }
-}
-
-pub struct Buffer<const N: usize, A: Allocator = Global> {
-    chunk: RawBuffer<u8, N, A>,
+pub struct Buffer<const N: usize, A: Allocator = Global, C: Chunk<u8, N, A> = [u8; N]> {
+    chunk: C,
     filled_pos: LenUint,
     pos: LenUint,
+    _spooky: PhantomData<A>,
+}
+
+pub trait Chunk<T, const N: usize, A: Allocator> {
+    fn new_uninit_in(alloc: A) -> Self;
+    fn as_slice(&self) -> &[T; N];
+    fn as_mut_slice(&mut self) -> &mut [T; N];
+    fn as_ptr(&self) -> *const T;
+    fn as_mut_ptr(&mut self) -> *mut T;
+}
+
+impl<T, const N: usize, A: Allocator> Chunk<T, N, A> for [T; N] {
+    fn as_slice(&self) -> &[T; N] {
+        self
+    }
+
+    fn as_mut_slice(&mut self) -> &mut [T; N] {
+        self
+    }
+
+    fn new_uninit_in(_alloc: A) -> Self {
+        unsafe { MaybeUninit::uninit().assume_init() }
+    }
+
+    fn as_ptr(&self) -> *const T {
+        <[T]>::as_ptr(self)
+    }
+
+    fn as_mut_ptr(&mut self) -> *mut T {
+        <[T]>::as_mut_ptr(self)
+    }
+}
+
+impl<T, const N: usize, A: Allocator> Chunk<T, N, A> for Box<[T; N], A> {
+    fn as_slice(&self) -> &[T; N] {
+        self
+    }
+
+    fn as_mut_slice(&mut self) -> &mut [T; N] {
+        self
+    }
+
+    fn new_uninit_in(alloc: A) -> Self {
+        unsafe { Box::new_uninit_in(alloc).assume_init() }
+    }
+
+    fn as_ptr(&self) -> *const T {
+        <[T]>::as_ptr(self.deref())
+    }
+
+    fn as_mut_ptr(&mut self) -> *mut T {
+        <[T]>::as_mut_ptr(self.deref_mut())
+    }
 }
 
 type LenUint = u32;
 
-impl<const N: usize> Buffer<N> {
-    pub fn new() -> Self {
+impl<A: Allocator, const N: usize, C: Chunk<u8, N, A>> Buffer<N, A, C> {
+    pub fn new_in(alloc: A) -> Self {
         Self {
-            chunk: RawBuffer::new(),
+            chunk: C::new_uninit_in(alloc),
             filled_pos: 0,
             pos: 0,
+            _spooky: PhantomData,
         }
-    }
-
-    pub fn new_boxed() -> Self {
-        Self {
-            chunk: RawBuffer::new_boxed(),
-            filled_pos: 0,
-            pos: 0,
-        }
-    }
-
-    pub fn to_slice(&self) -> &[u8; N] {
-        self.chunk.to_slice()
-    }
-
-    pub fn to_slice_mut(&mut self) -> &mut [u8; N] {
-        self.chunk.to_slice_mut()
     }
 }
 
-impl<const N: usize> Buf for Buffer<N> {
+impl<const N: usize, C: Chunk<u8, N, Global>> Buffer<N, Global, C> {
+    pub fn new() -> Self {
+        Self {
+            chunk: C::new_uninit_in(Global),
+            filled_pos: 0,
+            pos: 0,
+            _spooky: PhantomData,
+        }
+    }
+}
+
+impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> Buf for Buffer<N, A, C> {
     fn clear(&mut self) {
         self.filled_pos = 0;
         self.pos = 0;
@@ -127,24 +116,16 @@ impl<const N: usize> Buf for Buffer<N> {
     }
 }
 
-impl<const N: usize> WriteBuf for Buffer<N> {
+impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> WriteBuf for Buffer<N, A, C> {
     fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError> {
         let filled_pos = self.filled_pos as usize;
         let new_filled_pos = filled_pos + data.len();
         if new_filled_pos <= N {
             unsafe {
-                match self.chunk {
-                    RawBuffer::Slice(ref mut slice) => {
-                        slice
-                            .get_unchecked_mut(filled_pos..new_filled_pos)
-                            .copy_from_slice(data);
-                    }
-                    RawBuffer::Boxed(ref mut boxed) => {
-                        boxed
-                            .get_unchecked_mut(filled_pos..new_filled_pos)
-                            .copy_from_slice(data);
-                    }
-                }
+                self.chunk
+                    .as_mut_slice()
+                    .get_unchecked_mut(filled_pos..new_filled_pos)
+                    .copy_from_slice(data);
             }
             self.filled_pos = new_filled_pos as LenUint;
             Ok(())
@@ -156,7 +137,7 @@ impl<const N: usize> WriteBuf for Buffer<N> {
     fn write(&mut self, data: &[u8]) {
         let filled_pos = self.filled_pos as usize;
         let new_filled_pos_len = filled_pos + data.len();
-        self.chunk[filled_pos..new_filled_pos_len].copy_from_slice(data);
+        self.chunk.as_mut_slice()[filled_pos..new_filled_pos_len].copy_from_slice(data);
         self.filled_pos = new_filled_pos_len as LenUint;
     }
 
@@ -173,7 +154,7 @@ impl<const N: usize> WriteBuf for Buffer<N> {
     }
 }
 
-impl<const N: usize> ReadBuf for Buffer<N> {
+impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> ReadBuf for Buffer<N, A, C> {
     fn read(&mut self, len: usize) -> &[u8] {
         let pos = self.pos as usize;
         let slice_len = core::cmp::min(len, self.filled_pos as usize - pos);
@@ -225,7 +206,7 @@ impl<T: std::io::Read> ReadToBuf for T {
     }
 }
 
-impl<const N: usize> std::io::Write for Buffer<N> {
+impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> std::io::Write for Buffer<N, A, C> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let backup_filled_pos = self.filled_pos();
         self.try_write(buf)
@@ -238,9 +219,9 @@ impl<const N: usize> std::io::Write for Buffer<N> {
     }
 }
 
-impl<const N: usize> Debug for Buffer<N> {
+impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> Debug for Buffer<N, A, C> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.chunk[self.pos()..self.filled_pos()].fmt(f)
+        self.chunk.as_slice()[self.pos()..self.filled_pos()].fmt(f)
     }
 }
 
@@ -252,20 +233,25 @@ mod tests {
 
     #[test]
     fn test_debug() {
-        let f = |mut buffer: Buffer<16>| {
-            let data = b"test";
+        macro_rules! test {
+            ($($buf:tt)*) => {
+                let mut buffer = $($buf)*;
+                let data = b"test";
 
-            buffer.write(data);
-            let debug_str = format!("{:?}", buffer);
-            assert_eq!(debug_str, "[116, 101, 115, 116]");
-        };
-        f(Buffer::new());
-        f(Buffer::new_boxed());
+                buffer.write(data);
+                let debug_str = format!("{:?}", buffer);
+                assert_eq!(debug_str, "[116, 101, 115, 116]");
+            }
+        }
+        test!(Buffer::<16>::new());
+        test!(BoxedBuffer::<16, Global>::new());
     }
 
     #[test]
     fn test_write_and_read() {
-        let f = |mut buffer: Buffer<16>| {
+        macro_rules! test {
+            ($($buf:tt)*) => {
+                let mut buffer = $($buf)*;
             let data = b"hello";
 
             buffer.write(data);
@@ -273,53 +259,66 @@ mod tests {
 
             let read_data = buffer.read(5);
             assert_eq!(read_data, data);
-        };
-        f(Buffer::new());
-        f(Buffer::new_boxed());
+            }
+        }
+        test!(Buffer::<16>::new());
+        test!(BoxedBuffer::<16, Global>::new());
     }
 
     #[test]
     fn test_try_write_success() {
-        let f = |mut buffer: Buffer<16>| {
+        macro_rules! test {
+            ($($buf:tt)*) => {
+                let mut buffer = $($buf)*;
             let data = b"hello";
 
             assert!(buffer.try_write(data).is_ok());
             assert_eq!(buffer.remaining_space(), 11);
-        };
-        f(Buffer::new());
-        f(Buffer::new_boxed());
+        }
+        }
+        
+        test!(Buffer::<16>::new());
+        test!(BoxedBuffer::<16, Global>::new());
     }
 
     #[test]
     fn test_try_write_fail() {
-        let f = |mut buffer: Buffer<8>| {
+        macro_rules! test {
+            ($($buf:tt)*) => {
+                let mut buffer = $($buf)*;
             let data = b"too long data";
 
             assert!(buffer.try_write(data).is_err());
             assert_eq!(buffer.remaining_space(), 8);
             buffer.try_write(&[]).unwrap();
-        };
-        f(Buffer::new());
-        f(Buffer::new_boxed());
+        }}
+        
+        test!(Buffer::<8>::new());
+        test!(BoxedBuffer::<8, Global>::new());
     }
 
     #[test]
     fn test_clear() {
-        let f = |mut buffer: Buffer<16>| {
+        macro_rules! test {
+            ($($buf:tt)*) => {
+                let mut buffer = $($buf)*;
             let data = b"hello";
 
             buffer.write(data);
             buffer.clear();
             assert_eq!(buffer.remaining_space(), 16);
             assert_eq!(buffer.remaining(), 0);
-        };
-        f(Buffer::new());
-        f(Buffer::new_boxed());
+        }}
+        
+        test!(Buffer::<16>::new());
+        test!(BoxedBuffer::<16, Global>::new());
     }
 
     #[test]
     fn test_advance() {
-        let f = |mut buffer: Buffer<16>| {
+        macro_rules! test {
+            ($($buf:tt)*) => {
+                let mut buffer = $($buf)*;
             let data = b"hello world";
 
             buffer.write(data);
@@ -328,22 +327,26 @@ mod tests {
 
             let remaining_data = buffer.read(5);
             assert_eq!(remaining_data, b"world");
-        };
-        f(Buffer::new());
-        f(Buffer::new_boxed());
+        }}
+        
+        test!(Buffer::<16>::new());
+        test!(BoxedBuffer::<16, Global>::new());
     }
 
     #[test]
     fn test_get_continuous() {
-        let f = |mut buffer: Buffer<16>| {
+        macro_rules! test {
+            ($($buf:tt)*) => {
+                let mut buffer = $($buf)*;
             let data = b"hello world";
 
             buffer.write(data);
             let continuous_data = unsafe { buffer.get_continuous(5) };
             assert_eq!(continuous_data, b"hello");
-        };
-        f(Buffer::new());
-        f(Buffer::new_boxed());
+        }}
+        
+        test!(Buffer::<16>::new());
+        test!(BoxedBuffer::<16, Global>::new());
     }
 
     const N: usize = 1000;

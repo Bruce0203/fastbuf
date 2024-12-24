@@ -100,13 +100,9 @@ impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> ReadBuf for Buffer<N, A, 
     fn read(&mut self, len: usize) -> &[u8] {
         let pos = self.pos;
         let slice_len = core::cmp::min(len as LenUint, self.filled_pos - pos);
-        let new_pos = pos + slice_len;
-        self.pos = new_pos as LenUint;
+        self.pos = pos + slice_len;
         unsafe {
-            &*ptr::slice_from_raw_parts(
-                self.chunk.as_ptr().offset(pos as isize),
-                slice_len as usize,
-            )
+            &*ptr::slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos as usize), slice_len as usize)
         }
     }
 
@@ -114,7 +110,7 @@ impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> ReadBuf for Buffer<N, A, 
         let pos = self.pos as usize;
         let filled_pos = self.filled_pos as usize;
         let slice_len = core::cmp::min(len, filled_pos - pos);
-        unsafe { &*ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), slice_len) }
+        unsafe { &*ptr::slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
     }
 
     fn remaining(&self) -> usize {
@@ -140,7 +136,7 @@ impl<T: std::io::Read> ReadToBuf for T {
         let filled_pos = buf.filled_pos() as usize;
         let slice = unsafe {
             &mut *slice_from_raw_parts_mut(
-                buf.as_mut_ptr().offset(filled_pos as isize),
+                buf.as_mut_ptr().wrapping_add(filled_pos),
                 buf.capacity() - filled_pos,
             )
         };

@@ -15,3 +15,8 @@ include = [
 default = ["std"]
 std = []
 
+
+[profile.bench]
+strip = true
+lto = true
+codegen-units = 1

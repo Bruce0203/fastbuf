@@ -236,7 +236,7 @@ impl<const N: usize> Debug for Buffer<N> {
 
 #[cfg(test)]
 mod tests {
-    use test::Bencher;
+    use test::{black_box, Bencher};
 
     use super::*;
 

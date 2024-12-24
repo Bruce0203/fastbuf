@@ -18,7 +18,7 @@ enum RawBuffer<T, const N: usize, A: Allocator = Global> {
 
 impl<T, const N: usize> RawBuffer<T, N> {
     pub fn new_boxed() -> Self {
-        Self::Boxed(unsafe { transmute(Box::<[T; N]>::new_uninit_in(Global)) })
+        Self::Boxed(unsafe { Box::<[T; N]>::new_zeroed().assume_init() })
     }
 }
 

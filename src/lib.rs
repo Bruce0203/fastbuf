@@ -1,3 +1,4 @@
+#![feature(new_zeroed_alloc)]
 #![feature(allocator_api)]
 #![cfg_attr(test, feature(test))]
 #![cfg_attr(not(feature = "std"), no_std)]

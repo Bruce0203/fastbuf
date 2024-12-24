@@ -17,20 +17,24 @@ enum RawBuffer<T, const N: usize, A: Allocator = Global> {
 }
 
 impl<T, const N: usize> RawBuffer<T, N> {
+    #[inline]
     pub fn new_boxed() -> Self {
         Self::Boxed(unsafe { Box::new_uninit().assume_init() })
     }
 }
 
 impl<A: Allocator, T, const N: usize> RawBuffer<T, N, A> {
+    #[inline]
     pub fn new() -> Self {
         Self::Slice(unsafe { MaybeUninit::uninit().assume_init() })
     }
 
+    #[inline]
     pub fn new_boxed_in(alloc: A) -> Self {
         Self::Boxed(unsafe { Box::new_uninit_in(alloc).assume_init() })
     }
 
+    #[inline]
     pub fn as_ptr(&self) -> *const T {
         match self {
             RawBuffer::Slice(slice) => slice.as_ptr(),
@@ -38,6 +42,7 @@ impl<A: Allocator, T, const N: usize> RawBuffer<T, N, A> {
         }
     }
 
+    #[inline]
     pub fn as_mut_ptr(&mut self) -> *mut T {
         match self {
             RawBuffer::Slice(slice) => slice.as_mut_ptr(),
@@ -45,6 +50,7 @@ impl<A: Allocator, T, const N: usize> RawBuffer<T, N, A> {
         }
     }
 
+    #[inline]
     pub fn to_slice(&self) -> &[T; N] {
         match self {
             RawBuffer::Slice(slice) => slice,
@@ -52,6 +58,7 @@ impl<A: Allocator, T, const N: usize> RawBuffer<T, N, A> {
         }
     }
 
+    #[inline]
     pub fn to_slice_mut(&mut self) -> &mut [T; N] {
         match self {
             RawBuffer::Slice(slice) => slice,
@@ -63,12 +70,14 @@ impl<A: Allocator, T, const N: usize> RawBuffer<T, N, A> {
 impl<T, const N: usize, A: Allocator> Index<Range<usize>> for RawBuffer<T, N, A> {
     type Output = [T];
 
+    #[inline]
     fn index(&self, index: Range<usize>) -> &Self::Output {
         self.to_slice().index(index)
     }
 }
 
 impl<T, const N: usize, A: Allocator> IndexMut<Range<usize>> for RawBuffer<T, N, A> {
+    #[inline]
     fn index_mut(&mut self, index: Range<usize>) -> &mut Self::Output {
         self.to_slice_mut().index_mut(index)
     }
@@ -83,6 +92,7 @@ pub struct Buffer<const N: usize, A: Allocator = Global> {
 type LenUint = u32;
 
 impl<const N: usize> Buffer<N> {
+    #[inline]
     pub fn new() -> Self {
         Self {
             chunk: RawBuffer::new(),
@@ -90,6 +100,8 @@ impl<const N: usize> Buffer<N> {
             pos: 0,
         }
     }
+
+    #[inline]
     pub fn new_boxed() -> Self {
         Self {
             chunk: RawBuffer::new_boxed(),
@@ -98,35 +110,42 @@ impl<const N: usize> Buffer<N> {
         }
     }
 
+    #[inline]
     pub fn to_slice(&self) -> &[u8; N] {
         self.chunk.to_slice()
     }
 
+    #[inline]
     pub fn to_slice_mut(&mut self) -> &mut [u8; N] {
         self.chunk.to_slice_mut()
     }
 }
 
 impl<const N: usize> Buf for Buffer<N> {
+    #[inline]
     fn clear(&mut self) {
         self.filled_pos = 0;
         self.pos = 0;
     }
 
+    #[inline]
     fn as_ptr(&self) -> *const u8 {
         self.chunk.as_ptr()
     }
 
+    #[inline]
     fn as_mut_ptr(&mut self) -> *mut u8 {
         self.chunk.as_mut_ptr()
     }
 
+    #[inline]
     fn capacity(&self) -> usize {
         N
     }
 }
 
 impl<const N: usize> WriteBuf for Buffer<N> {
+    #[inline]
     fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError> {
         let filled_pos = self.filled_pos as usize;
         let len = data.len();
@@ -143,6 +162,7 @@ impl<const N: usize> WriteBuf for Buffer<N> {
         Ok(())
     }
 
+    #[inline]
     fn write(&mut self, data: &[u8]) {
         let filled_pos = self.filled_pos as usize;
         let new_filled_pos_len = filled_pos + data.len();
@@ -164,6 +184,7 @@ impl<const N: usize> WriteBuf for Buffer<N> {
 }
 
 impl<const N: usize> ReadBuf for Buffer<N> {
+    #[inline]
     fn read(&mut self, len: usize) -> &[u8] {
         let pos = self.pos as usize;
         let slice_len = core::cmp::min(len, self.filled_pos as usize - pos);
@@ -172,6 +193,7 @@ impl<const N: usize> ReadBuf for Buffer<N> {
         unsafe { &*ptr::slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
     }
 
+    #[inline]
     unsafe fn get_continuous(&self, len: usize) -> &[u8] {
         let pos = self.pos as usize;
         let filled_pos = self.filled_pos as usize;
@@ -179,25 +201,30 @@ impl<const N: usize> ReadBuf for Buffer<N> {
         unsafe { &*ptr::slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
     }
 
+    #[inline]
     fn remaining(&self) -> usize {
         (self.filled_pos - self.pos) as usize
     }
 
+    #[inline]
     fn advance(&mut self, len: usize) {
         let pos = self.pos as usize;
         self.pos = core::cmp::min(self.filled_pos, (pos + len) as LenUint);
     }
 
+    #[inline]
     fn pos(&self) -> usize {
         self.pos as usize
     }
 
+    #[inline]
     unsafe fn set_pos(&mut self, value: usize) {
         self.pos = value as u32;
     }
 }
 
 impl<T: std::io::Read> ReadToBuf for T {
+    #[inline]
     fn read_to_buf(&mut self, buf: &mut impl Buf) -> Result<(), ()> {
         let filled_pos = buf.filled_pos() as usize;
         let slice = unsafe {
@@ -216,6 +243,7 @@ impl<T: std::io::Read> ReadToBuf for T {
 }
 
 impl<const N: usize> std::io::Write for Buffer<N> {
+    #[inline]
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let backup_filled_pos = self.filled_pos();
         self.try_write(buf)

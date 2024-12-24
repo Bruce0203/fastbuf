@@ -12,7 +12,6 @@ extern crate test;
 extern crate core as std;
 
 mod traits;
-
 pub use traits::*;
 
 mod buffer;

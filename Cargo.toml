@@ -11,27 +11,7 @@ include = [
     "Cargo.toml",
 ]
 
-[dev-dependencies]
-arrayvec = "0.7.4"
-divan = "0.1.14"
-fast_collections = "0.64.0"
-rand = "0.8.5"
-
 [features]
 default = ["std"]
-embedded-io = ["dep:embedded-io"]
 std = []
 
-# [[bench]]
-# name = "sandbox"
-# harness = false
-
-[[bench]]
-name = "compare_write_vs_try_write"
-harness = false
-
-[profile.bench]
-lto = true
-
-[dependencies]
-embedded-io = { version = "0.6.1", optional = true }

@@ -98,11 +98,16 @@ impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> WriteBuf for Buffer<N, A,
 
 impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> ReadBuf for Buffer<N, A, C> {
     fn read(&mut self, len: usize) -> &[u8] {
-        let pos = self.pos as usize;
-        let slice_len = core::cmp::min(len, self.filled_pos as usize - pos);
+        let pos = self.pos;
+        let slice_len = core::cmp::min(len as LenUint, self.filled_pos - pos);
         let new_pos = pos + slice_len;
         self.pos = new_pos as LenUint;
-        unsafe { &*ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), slice_len) }
+        unsafe {
+            &*ptr::slice_from_raw_parts(
+                self.chunk.as_ptr().offset(pos as isize),
+                slice_len as usize,
+            )
+        }
     }
 
     unsafe fn get_continuous(&self, len: usize) -> &[u8] {
@@ -313,6 +318,18 @@ mod tests {
         b.iter(|| {
             unsafe { buffer.set_filled_pos(0) };
             let _ = black_box(&buffer.write(&src));
+        });
+        black_box(&buffer);
+    }
+
+    #[bench]
+    fn bench_buffer_read(b: &mut Bencher) {
+        let ref mut buffer: Buffer<N> = Buffer::new();
+        let src: &[u8] = &vec![0; N];
+        buffer.write(src);
+        b.iter(|| {
+            unsafe { buffer.set_pos(0) };
+            let _ = black_box(&buffer.read(N));
         });
         black_box(&buffer);
     }

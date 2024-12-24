@@ -1,16 +1,10 @@
-use core::{
-    fmt::Debug,
-    marker::PhantomData,
-    mem::MaybeUninit,
-    ops::{Deref, DerefMut},
-    ptr,
-};
+use core::{fmt::Debug, marker::PhantomData, ptr};
 use std::{
     alloc::{Allocator, Global},
     ptr::slice_from_raw_parts_mut,
 };
 
-use crate::{Buf, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError};
+use crate::{Buf, Chunk, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError};
 
 pub type BoxedBuffer<const N: usize, A = Global> = Buffer<N, A, Box<[u8; N]>>;
 
@@ -18,73 +12,10 @@ pub struct Buffer<const N: usize, A: Allocator = Global, C: Chunk<u8, N, A> = [u
     chunk: C,
     filled_pos: LenUint,
     pos: LenUint,
-    _spooky: PhantomData<A>,
-}
-
-pub trait Chunk<T, const N: usize, A: Allocator> {
-    fn new_uninit_in(alloc: A) -> Self;
-    fn as_slice(&self) -> &[T; N];
-    fn as_mut_slice(&mut self) -> &mut [T; N];
-    fn as_ptr(&self) -> *const T;
-    fn as_mut_ptr(&mut self) -> *mut T;
-}
-
-impl<T, const N: usize, A: Allocator> Chunk<T, N, A> for [T; N] {
-    fn as_slice(&self) -> &[T; N] {
-        self
-    }
-
-    fn as_mut_slice(&mut self) -> &mut [T; N] {
-        self
-    }
-
-    fn new_uninit_in(_alloc: A) -> Self {
-        unsafe { MaybeUninit::uninit().assume_init() }
-    }
-
-    fn as_ptr(&self) -> *const T {
-        <[T]>::as_ptr(self)
-    }
-
-    fn as_mut_ptr(&mut self) -> *mut T {
-        <[T]>::as_mut_ptr(self)
-    }
-}
-
-impl<T, const N: usize, A: Allocator> Chunk<T, N, A> for Box<[T; N], A> {
-    fn as_slice(&self) -> &[T; N] {
-        self
-    }
-
-    fn as_mut_slice(&mut self) -> &mut [T; N] {
-        self
-    }
-
-    fn new_uninit_in(alloc: A) -> Self {
-        unsafe { Box::new_uninit_in(alloc).assume_init() }
-    }
-
-    fn as_ptr(&self) -> *const T {
-        <[T]>::as_ptr(self.deref())
-    }
-
-    fn as_mut_ptr(&mut self) -> *mut T {
-        <[T]>::as_mut_ptr(self.deref_mut())
-    }
+    _marker: PhantomData<A>,
 }
 
 type LenUint = u32;
-
-impl<A: Allocator, const N: usize, C: Chunk<u8, N, A>> Buffer<N, A, C> {
-    pub fn new_in(alloc: A) -> Self {
-        Self {
-            chunk: C::new_uninit_in(alloc),
-            filled_pos: 0,
-            pos: 0,
-            _spooky: PhantomData,
-        }
-    }
-}
 
 impl<const N: usize, C: Chunk<u8, N, Global>> Buffer<N, Global, C> {
     pub fn new() -> Self {
@@ -92,7 +23,18 @@ impl<const N: usize, C: Chunk<u8, N, Global>> Buffer<N, Global, C> {
             chunk: C::new_uninit_in(Global),
             filled_pos: 0,
             pos: 0,
-            _spooky: PhantomData,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<A: Allocator, const N: usize, C: Chunk<u8, N, A>> Buffer<N, A, C> {
+    pub fn new_in(alloc: A) -> Self {
+        Self {
+            chunk: C::new_uninit_in(alloc),
+            filled_pos: 0,
+            pos: 0,
+            _marker: PhantomData,
         }
     }
 }

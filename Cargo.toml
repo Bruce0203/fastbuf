@@ -20,3 +20,6 @@ std = []
 strip = true
 lto = true
 codegen-units = 1
+
+[dependencies]
+num-traits = "0.2.19"

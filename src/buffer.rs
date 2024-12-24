@@ -1,6 +1,6 @@
 use core::{
     fmt::Debug,
-    mem::MaybeUninit,
+    mem::{transmute, MaybeUninit},
     ops::{Index, IndexMut, Range},
     ptr,
 };
@@ -18,7 +18,8 @@ enum RawBuffer<T, const N: usize, A: Allocator = Global> {
 
 impl<T, const N: usize> RawBuffer<T, N> {
     pub fn new_boxed() -> Self {
-        Self::Boxed(unsafe { Box::new_uninit().assume_init() })
+        let box_uninit = Box::<[T; N]>::new_uninit();
+        Self::Boxed(unsafe { transmute(box_uninit) })
     }
 }
 

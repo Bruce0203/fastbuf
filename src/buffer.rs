@@ -154,12 +154,8 @@ impl<const N: usize> WriteBuf for Buffer<N> {
             return Err(WriteBufferError::BufferFull);
         }
         self.filled_pos = new_filled_pos_len as LenUint;
-        unsafe {
-            self.chunk
-                .as_mut_ptr()
-                .wrapping_add(filled_pos)
-                .copy_from_nonoverlapping(data.as_ptr(), len);
-        };
+        let dst = unsafe { &mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr(), len) };
+        dst.copy_from_slice(data);
         Ok(())
     }
 

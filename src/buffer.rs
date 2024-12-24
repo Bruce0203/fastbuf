@@ -155,7 +155,7 @@ impl<const N: usize> WriteBuf for Buffer<N> {
         }
         self.filled_pos = new_filled_pos_len as LenUint;
         unsafe {
-            let dst = self.chunk.as_mut_ptr().add(filled_pos);
+            let dst = self.chunk.as_mut_ptr().wrapping_add(filled_pos);
             let src = data.as_ptr();
             dst.copy_from_nonoverlapping(src, len)
         };
@@ -373,10 +373,8 @@ mod tests {
         let src: &[u8] = &vec![0; N];
         black_box(&src);
         b.iter(|| {
-            for _ in 0..SAMPLE_SIZE {
-                unsafe { buffer.set_filled_pos(0) };
-                let _ = black_box(&buffer.try_write(&src));
-            }
+            unsafe { buffer.set_filled_pos(0) };
+            let _ = black_box(&buffer.try_write(&src));
         });
         black_box(&buffer);
     }
@@ -387,10 +385,8 @@ mod tests {
         let src: &[u8] = &vec![0; N];
         black_box(&src);
         b.iter(|| {
-            for _ in 0..SAMPLE_SIZE {
-                unsafe { buffer.set_filled_pos(0) };
-                let _ = black_box(&buffer.write(&src));
-            }
+            unsafe { buffer.set_filled_pos(0) };
+            let _ = black_box(&buffer.write(&src));
         });
         black_box(&buffer);
     }

@@ -60,19 +60,18 @@ impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> Buf for Buffer<N, A, C> {
 
 impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> WriteBuf for Buffer<N, A, C> {
     fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError> {
-        let filled_pos = self.filled_pos;
-        let len = data.len();
-        self.filled_pos = filled_pos + len as LenUint;
-        if self.filled_pos <= N as LenUint {
+        let filled_pos = self.filled_pos as usize;
+        let new_filled_pos = filled_pos + data.len();
+        if new_filled_pos <= N {
+            self.filled_pos = new_filled_pos as LenUint;
             unsafe {
                 self.chunk
-                    .as_mut_ptr()
-                    .wrapping_add(filled_pos as usize)
-                    .copy_from_nonoverlapping(data.as_ptr(), len);
+                    .as_mut_slice()
+                    .get_unchecked_mut(filled_pos..new_filled_pos)
+                    .copy_from_slice(data);
             }
             Ok(())
         } else {
-            self.filled_pos = filled_pos;
             Err(WriteBufferError::BufferFull)
         }
     }

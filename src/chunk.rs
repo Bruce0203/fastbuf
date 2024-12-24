@@ -1,8 +1,4 @@
-use core::{
-    alloc::Allocator,
-    mem::MaybeUninit,
-    ops::{Deref, DerefMut},
-};
+use core::{alloc::Allocator, mem::MaybeUninit};
 
 pub trait Chunk<T, const N: usize, A: Allocator> {
     fn new_uninit_in(alloc: A) -> Self;
@@ -48,10 +44,10 @@ impl<T, const N: usize, A: Allocator> Chunk<T, N, A> for Box<[T; N], A> {
     }
 
     fn as_ptr(&self) -> *const T {
-        <[T]>::as_ptr(self.deref())
+        <[T]>::as_ptr(&**self)
     }
 
     fn as_mut_ptr(&mut self) -> *mut T {
-        <[T]>::as_mut_ptr(self.deref_mut())
+        <[T]>::as_mut_ptr(&mut **self)
     }
 }

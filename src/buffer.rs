@@ -1,6 +1,5 @@
 use core::{
     fmt::Debug,
-    hint::black_box,
     mem::MaybeUninit,
     ops::{Index, IndexMut, Range},
     ptr,
@@ -136,13 +135,11 @@ impl<const N: usize> WriteBuf for Buffer<N> {
             return Err(WriteBufferError::BufferFull);
         }
         self.filled_pos = new_filled_pos_len as LenUint;
-        black_box(141);
         unsafe {
             let dst = self.chunk.as_mut_ptr().add(filled_pos);
             let src = data.as_ptr();
             dst.copy_from_nonoverlapping(src, len)
         };
-        black_box(142);
         Ok(())
     }
 

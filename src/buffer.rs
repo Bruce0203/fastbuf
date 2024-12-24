@@ -191,7 +191,7 @@ impl<const N: usize> ReadBuf for Buffer<N> {
         let slice_len = core::cmp::min(len, self.filled_pos as usize - pos);
         let new_pos = pos + slice_len;
         self.pos = new_pos as LenUint;
-        unsafe { &*ptr::slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
+        unsafe { &*ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), slice_len) }
     }
 
     #[inline]
@@ -199,7 +199,7 @@ impl<const N: usize> ReadBuf for Buffer<N> {
         let pos = self.pos as usize;
         let filled_pos = self.filled_pos as usize;
         let slice_len = core::cmp::min(len, filled_pos - pos);
-        unsafe { &*ptr::slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
+        unsafe { &*ptr::slice_from_raw_parts(self.chunk.as_ptr().offset(pos as isize), slice_len) }
     }
 
     #[inline]
@@ -230,7 +230,7 @@ impl<T: std::io::Read> ReadToBuf for T {
         let filled_pos = buf.filled_pos() as usize;
         let slice = unsafe {
             &mut *slice_from_raw_parts_mut(
-                buf.as_mut_ptr().wrapping_add(filled_pos),
+                buf.as_mut_ptr().offset(filled_pos as isize),
                 buf.capacity() - filled_pos,
             )
         };

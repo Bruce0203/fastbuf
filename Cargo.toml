@@ -15,3 +15,7 @@ include = [
 default = ["std"]
 std = []
 
+
+[[bench]]
+name = "cursor"
+harness = false

@@ -131,18 +131,14 @@ impl<const N: usize> WriteBuf for Buffer<N> {
     fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError> {
         let filled_pos = self.filled_pos as usize;
         let new_filled_pos = filled_pos + data.len();
-        if new_filled_pos <= N {
-            unsafe {
-                self.chunk
-                    .to_slice_mut()
-                    .get_unchecked_mut(filled_pos..new_filled_pos)
-                    .copy_from_slice(data);
-            }
-            self.filled_pos = new_filled_pos as LenUint;
-            Ok(())
-        } else {
-            Err(WriteBufferError::BufferFull)
+        unsafe {
+            self.chunk
+                .to_slice_mut()
+                .get_unchecked_mut(filled_pos..new_filled_pos)
+                .copy_from_slice(data);
         }
+        self.filled_pos = new_filled_pos as LenUint;
+        Ok(())
     }
 
     fn write(&mut self, data: &[u8]) {

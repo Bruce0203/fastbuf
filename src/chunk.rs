@@ -1,4 +1,4 @@
-use core::{alloc::Allocator, mem::MaybeUninit};
+use core::{alloc::Allocator, mem::MaybeUninit, ops::Range, slice::SliceIndex};
 
 use crate::{declare_impl, declare_trait};
 
@@ -103,3 +103,4 @@ declare_impl! {
         }
     }
 }
+

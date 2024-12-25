@@ -135,6 +135,9 @@ declare_impl! {
             let slice_len = const_min!(len, self.filled_pos as usize - pos);
             let new_pos = pos + slice_len;
             self.pos = new_pos as LenUint;
+            #[cfg(not(feature = "const-trait"))]
+            unsafe { &self.chunk.as_mut_slice()[pos..new_pos] }
+            #[cfg(feature = "const-trait")]
             unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos as usize), slice_len) }
         }
 

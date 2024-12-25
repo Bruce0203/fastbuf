@@ -1,3 +1,4 @@
+#![feature(slice_index_methods)]
 #![feature(min_specialization)]
 #![feature(const_copy_from_slice)]
 #![feature(const_trait_impl)]

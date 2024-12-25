@@ -23,6 +23,8 @@ pub struct Buffer<T: Copy, const N: usize, A: Allocator = ALLOC, C: Chunk<T, N, 
     _marker: PhantomData<(A, T)>,
 }
 
+impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A>> Copy for Buffer<T, N, A, C> {}
+
 #[cfg(target_pointer_width = "64")]
 type LenUint = u32;
 #[cfg(target_pointer_width = "32")]

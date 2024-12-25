@@ -3,7 +3,7 @@ use core::{alloc::Allocator, mem::MaybeUninit, ops::Range, slice::SliceIndex};
 use crate::{declare_impl, declare_trait};
 
 declare_trait! {
-    pub trait Chunk<(T, const N: usize, A: Allocator)>: const (), (Clone) {
+    pub trait Chunk<(T, const N: usize, A: Allocator)>: const (), (Clone, Copy) {
         fn new_uninit_in(alloc: A) -> Self;
         fn new_uninit() -> Self;
         fn as_slice(&self) -> &[T; N];
@@ -14,8 +14,8 @@ declare_trait! {
 }
 
 declare_impl! {
-    (impl<T: Clone, const N: usize, A: Allocator> Chunk<T, N, A> for [T; N]),
-    (impl<T: Clone, const N: usize, A: Allocator> const Chunk<T, N, A> for [T; N]) {
+    (impl<T: Copy + Clone, const N: usize, A: Allocator> Chunk<T, N, A> for [T; N]),
+    (impl<T: Copy + Clone, const N: usize, A: Allocator> const Chunk<T, N, A> for [T; N]) {
         #[inline(always)]
         fn as_slice(&self) -> &[T; N] {
             self

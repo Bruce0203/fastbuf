@@ -1,6 +1,6 @@
 use core::{alloc::Allocator, mem::MaybeUninit};
 
-use crate::{declare_impl, Chunk, ConstClone};
+use crate::{declare_impl, Chunk};
 
 declare_impl! {
     (impl<T: Copy + Clone, const N: usize, A: Allocator> Chunk<T, N, A> for [T; N]),
@@ -40,20 +40,6 @@ declare_impl! {
         fn new_zeroed() -> Self {
             unsafe { MaybeUninit::zeroed().assume_init() }
         }
-    }
-}
-
-impl<T: Copy + Clone, const N: usize> const ConstClone for Box<[T; N]> {
-    fn const_clone(&self) -> Self {
-        unreachable!()
-    }
-}
-
-impl<T: Copy + Clone, const N: usize> const ConstClone for [T; N] {
-    fn const_clone(&self) -> Self {
-        let mut slice: [T; N] = unsafe { MaybeUninit::uninit().assume_init() };
-        slice.copy_from_slice(self);
-        slice
     }
 }
 

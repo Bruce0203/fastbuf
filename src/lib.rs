@@ -27,7 +27,6 @@ mod buffer;
 pub use buffer::*;
 
 mod chunk;
-pub use chunk::*;
 
 pub(crate) struct EmptyAlloc;
 unsafe impl std::alloc::Allocator for EmptyAlloc {
@@ -59,7 +58,8 @@ pub(crate) mod macros {
 
     #[macro_export]
     macro_rules! declare_trait {
-        ($visibility:vis trait $name:ident<($($generics:tt)*)>: const ($($const_supertrait:path),*), ($($supertrait:path),*) {$($body:tt)*}) => {
+        ($visibility:vis trait $name:ident<($($generics:tt)*)>
+         : const ($($const_supertrait:path),*), ($($supertrait:path),*) {$($body:tt)*}) => {
             #[cfg(not(feature = "const-trait"))]
             $visibility trait $name<$($generics)*>: $($const_supertrait +)* $($supertrait + )* {
                 $($body)*
@@ -88,7 +88,11 @@ pub(crate) mod macros {
     #[macro_export]
     macro_rules! const_min {
         ($a:expr, $b:expr) => {
-            konst::min!($a, $b)
+            if $a > $b {
+                $b
+            } else {
+                $a
+            }
         };
     }
 

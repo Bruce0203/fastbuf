@@ -14,11 +14,6 @@ declare_trait! {
     }
 }
 
-#[const_trait]
-pub trait ConstClone {
-    fn const_clone(&self) -> Self;
-}
-
 declare_trait! {
     pub trait Buf<(T)>: const (ReadBuf<T>, WriteBuf<T>), () {
         fn clear(&mut self);

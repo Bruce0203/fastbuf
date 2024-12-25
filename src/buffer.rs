@@ -2,8 +2,7 @@ use core::{fmt::Debug, marker::PhantomData, ptr::slice_from_raw_parts};
 use std::{alloc::Allocator, ptr::slice_from_raw_parts_mut};
 
 use crate::{
-    const_min, declare_fn, declare_impl, Buf, Chunk, ConstClone, ReadBuf, ReadToBuf, WriteBuf,
-    WriteBufferError,
+    const_min, declare_fn, declare_impl, Buf, Chunk, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError,
 };
 
 #[cfg(feature = "std")]
@@ -31,6 +30,7 @@ type LenUint = u32;
 #[cfg(target_pointer_width = "32")]
 type LenUint = u16;
 
+#[cfg(feature = "impl_copy_for_buffer")]
 impl<T: Copy, const N: usize, A: Allocator, C: Chunk<T, N, A> + Copy + Clone> Copy
     for Buffer<T, N, A, C>
 {
@@ -113,19 +113,6 @@ declare_impl! {
         #[inline(always)]
         fn as_mut_ptr(&mut self) -> *mut T {
             self.chunk.as_mut_ptr()
-        }
-    }
-}
-
-impl<T, const N: usize, A: Allocator, C: Chunk<T, N, A> + const ConstClone> const ConstClone
-    for Buffer<T, N, A, C>
-{
-    fn const_clone(&self) -> Self {
-        Self {
-            chunk: ConstClone::const_clone(&self.chunk),
-            filled_pos: self.filled_pos,
-            pos: self.pos,
-            _marker: self._marker,
         }
     }
 }
@@ -464,7 +451,6 @@ mod tests {
     #[test]
     fn test_clone() {
         const BUF: ByteBuffer<1000> = Buffer::<u8, 1000, std::alloc::Global>::new_zeroed();
-        let buffer_cloned = { BUF.const_clone() };
     }
 
     const N: usize = 1000;

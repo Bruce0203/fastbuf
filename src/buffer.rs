@@ -81,16 +81,23 @@ declare_impl! {
     (impl<T: Copy, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const WriteBuf<T> for Buffer<T, N, A, C>) {
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError> {
             let filled_pos = self.filled_pos as usize;
-            let len = data.len();
-            let new_filled_pos = filled_pos + len;
-            self.filled_pos = new_filled_pos as LenUint;
-            if self.filled_pos <= N as LenUint {
+            let new_filled_pos = filled_pos + data.len();
+            if new_filled_pos <= N {
+                self.filled_pos = new_filled_pos as LenUint;
+                #[cfg(not(feature = "const-trait"))]
                 unsafe {
-                    (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos as usize),len)).copy_from_slice(data);
+                    self.chunk
+                        .as_mut_slice()
+                        .get_unchecked_mut(filled_pos..new_filled_pos)
+                        .copy_from_slice(data);
+                }
+
+                #[cfg(feature = "const-trait")]
+                unsafe {
+                    (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos),data.len())).copy_from_slice(data);
                 }
                 Ok(())
             } else {
-                self.filled_pos = filled_pos as LenUint;
                 Err(WriteBufferError::BufferFull)
             }
         }
@@ -99,7 +106,11 @@ declare_impl! {
             let filled_pos = self.filled_pos as usize;
             let new_filled_pos_len = filled_pos + data.len();
             self.filled_pos = new_filled_pos_len as LenUint;
+            #[cfg(not(feature = "const-trait"))]
+            self.chunk.as_mut_slice()[filled_pos..new_filled_pos_len].copy_from_slice(data);
+            #[cfg(feature = "const-trait")]
             unsafe {
+
                 (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos), data.len())).copy_from_slice(data);
             }
         }
@@ -142,7 +153,17 @@ declare_impl! {
 
         fn advance(&mut self, len: usize) {
             let pos = self.pos as usize;
-            self.pos = min!(self.filled_pos, (pos + len) as LenUint);
+            if cfg!(feature = "const-trait") {
+                let filled_pos = self.filled_pos;
+                let new_pos = (pos + len) as LenUint;
+                self.pos = if filled_pos > new_pos {
+                    new_pos
+                } else {
+                    filled_pos
+                };
+            } else {
+                self.pos = min!(self.filled_pos, (pos + len) as LenUint);
+            }
         }
 
         fn pos(&self) -> usize {

@@ -54,18 +54,22 @@ declare_impl! {
     }
 }
 
+fn asdf() {
+    let a: *const u8 = &0;
+}
+
 #[cfg(all(not(feature = "const-trait"), feature = "std"))]
 declare_impl! {
     (impl<T, const N: usize, A: Allocator> Chunk<T, N, A> for Box<[T; N], A>),
     (impl<T, const N: usize, A: Allocator> const Chunk<T, N, A> for Box<[T; N], A>) {
         #[inline(always)]
         default fn as_slice(&self) -> &[T] {
-            unsafe { transmute_copy::<_, &[T; N]>(&self.as_ptr()) }
+            &**self
         }
 
         #[inline(always)]
         default fn as_mut_slice(&mut self) -> &mut [T] {
-            unsafe { transmute_copy::<_, &mut [T; N]>(&self.as_mut_ptr()) }
+            &mut **self
         }
 
         #[inline(always)]

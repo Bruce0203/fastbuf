@@ -2,7 +2,8 @@ use core::{fmt::Debug, marker::PhantomData, ptr::slice_from_raw_parts};
 use std::{alloc::Allocator, ptr::slice_from_raw_parts_mut};
 
 use crate::{
-    const_min, declare_impl, Buf, Chunk, ConstClone, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError,
+    const_min, declare_fn, declare_impl, Buf, Chunk, ConstClone, ReadBuf, ReadToBuf, WriteBuf,
+    WriteBufferError,
 };
 
 #[cfg(feature = "std")]
@@ -29,6 +30,32 @@ pub struct Buffer<T, const N: usize, A: Allocator = ALLOC, C: Chunk<T, N, A> = [
 type LenUint = u32;
 #[cfg(target_pointer_width = "32")]
 type LenUint = u16;
+
+declare_impl! {
+    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: Chunk<T, N, A>> Buffer<T, N, A, C>),
+    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: const Chunk<T, N, A>> Buffer<T, N, A, C>) {
+        declare_fn! {
+            #[inline(always)]
+            pub fn new_in(alloc: A) -> Self {
+                Chunk::new_in(alloc)
+            }
+        }
+
+        declare_fn! {
+            #[inline(always)]
+            pub fn new() -> Self {
+               Chunk::new()
+            }
+        }
+
+        declare_fn! {
+            #[inline(always)]
+            pub fn new_zeroed() -> Self {
+                Chunk::new_zeroed()
+            }
+        }
+    }
+}
 
 declare_impl! {
     (impl<T: Copy + Clone, A: Allocator, const N: usize, C: Chunk<T, N, A>> Chunk<T, N, A> for  Buffer<T, N, A, C>),

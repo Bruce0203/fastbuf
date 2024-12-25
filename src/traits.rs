@@ -1,22 +1,6 @@
+use crate::{declare_impl, declare_trait};
 use core::ops::{Deref, DerefMut};
 use std::alloc::Allocator;
-
-use crate::{declare_impl, Buffer};
-
-macro_rules! declare_trait {
-        ($visibility:vis trait $name:ident<($($generics:tt)*)>: const ($($const_supertrait:path),*), ($($supertrait:path),*) {$($body:tt)*}) => {
-            #[cfg(not(feature = "const-trait"))]
-            $visibility trait $name<$($generics)*>: $($const_supertrait +)* $($supertrait + )* {
-                $($body)*
-            }
-
-            #[cfg(feature = "const-trait")]
-            #[const_trait]
-            $visibility trait $name<$($generics)*>: $(const $const_supertrait +)* $($supertrait + )* {
-                $($body)*
-            }
-        };
-    }
 
 declare_trait! {
     pub trait Chunk<(T, const N: usize, A: Allocator)>: const (), () {

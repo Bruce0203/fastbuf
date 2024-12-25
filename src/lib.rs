@@ -43,6 +43,34 @@ unsafe impl std::alloc::Allocator for EmptyAlloc {
 pub(crate) mod macros {
 
     #[macro_export]
+    macro_rules! declare_fn {
+        ($(#[$($attrs:tt)*])* $visibility:vis fn $($tokens:tt)*) => {
+            #[cfg(feature = "const-trait")]
+            $(#[$($attrs)*])*
+            $visibility const fn $($tokens)*
+
+            #[cfg(not(feature = "const-trait"))]
+            $visibility fn $($tokens)*
+        };
+    }
+
+    #[macro_export]
+    macro_rules! declare_trait {
+        ($visibility:vis trait $name:ident<($($generics:tt)*)>: const ($($const_supertrait:path),*), ($($supertrait:path),*) {$($body:tt)*}) => {
+            #[cfg(not(feature = "const-trait"))]
+            $visibility trait $name<$($generics)*>: $($const_supertrait +)* $($supertrait + )* {
+                $($body)*
+            }
+
+            #[cfg(feature = "const-trait")]
+            #[const_trait]
+            $visibility trait $name<$($generics)*>: $(const $const_supertrait +)* $($supertrait + )* {
+                $($body)*
+            }
+        };
+    }
+
+    #[macro_export]
     macro_rules! declare_impl {
         (($($impl:tt)*), ($($impl_const:tt)*) {$($body:tt)*}) => {
             #[cfg(feature = "const-trait")]

@@ -2,7 +2,7 @@
 #![feature(min_specialization)]
 #![feature(const_copy_from_slice)]
 #![feature(const_trait_impl)]
-#![feature(new_zeroed_alloc)]
+#![cfg_attr(feature = "std", feature(new_zeroed_alloc))]
 #![feature(allocator_api)]
 #![cfg_attr(test, feature(test))]
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -24,6 +24,20 @@ pub use buffer::*;
 
 mod chunk;
 pub use chunk::*;
+
+pub struct EmptyAlloc;
+unsafe impl std::alloc::Allocator for EmptyAlloc {
+    fn allocate(
+        &self,
+        layout: std::alloc::Layout,
+    ) -> Result<std::ptr::NonNull<[u8]>, std::alloc::AllocError> {
+        unreachable!()
+    }
+
+    unsafe fn deallocate(&self, ptr: std::ptr::NonNull<u8>, layout: std::alloc::Layout) {
+        unreachable!()
+    }
+}
 
 pub(crate) mod macros {
 

@@ -1,18 +1,22 @@
 use core::{fmt::Debug, marker::PhantomData, ptr::slice_from_raw_parts};
-use std::{
-    alloc::{Allocator, Global},
-    ptr::slice_from_raw_parts_mut,
-};
+use std::{alloc::Allocator, ptr::slice_from_raw_parts_mut};
 
 use crate::{const_min, declare_impl, Buf, Chunk, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError};
 
-pub type BoxedBuffer<T, const N: usize, A = Global> = Buffer<T, N, A, Box<[u8; N]>>;
+#[cfg(feature = "std")]
+type ALLOC = std::alloc::Global;
+#[cfg(not(feature = "std"))]
+type ALLOC = crate::EmptyAlloc;
 
-pub type ByteBuffer<const N: usize, A = Global> = Buffer<u8, N, A>;
+#[cfg(feature = "std")]
+pub type BoxedBuffer<T, const N: usize, A = ALLOC> = Buffer<T, N, A, Box<[u8; N]>>;
 
-pub type BoxedByteBuffer<const N: usize, A = Global> = BoxedBuffer<u8, N, A>;
+pub type ByteBuffer<const N: usize, A = ALLOC> = Buffer<u8, N, A>;
 
-pub struct Buffer<T: Copy, const N: usize, A: Allocator = Global, C: Chunk<T, N, A> = [T; N]> {
+#[cfg(feature = "std")]
+pub type BoxedByteBuffer<const N: usize, A = ALLOC> = BoxedBuffer<u8, N, A>;
+
+pub struct Buffer<T: Copy, const N: usize, A: Allocator = ALLOC, C: Chunk<T, N, A> = [T; N]> {
     chunk: C,
     filled_pos: LenUint,
     pos: LenUint,
@@ -25,7 +29,7 @@ type LenUint = u32;
 type LenUint = u16;
 
 declare_impl! {
-    (impl<T: Copy, const N: usize, C: Chunk<T, N, Global>> Buffer<T, N, Global, C>),
+    (impl<T: Copy, const N: usize, C: Chunk<T, N, ALLOC>> Buffer<T, N, ALLOC, C>),
     (impl<T: Copy, const N: usize, C: const Chunk<T, N, Global>> Buffer<T, N, Global, C>) {
         #[inline(always)]
         pub fn new() -> Self {
@@ -191,6 +195,7 @@ declare_impl! {
     }
 }
 
+#[cfg(feature = "std")]
 impl<S: std::io::Read> ReadToBuf<u8> for S {
     #[inline(always)]
     fn read_to_buf(&mut self, buf: &mut impl Buf<u8>) -> Result<(), ()> {
@@ -210,6 +215,7 @@ impl<S: std::io::Read> ReadToBuf<u8> for S {
     }
 }
 
+#[cfg(feature = "std")]
 declare_impl! {
     (impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> std::io::Write for Buffer<u8, N, A, C>),
     (impl<const N: usize, A: Allocator, C: const Chunk<u8, N, A>> std::io::Write for Buffer<u8, N, A, C>) {
@@ -239,6 +245,7 @@ declare_impl! {
 }
 
 #[cfg(test)]
+#[cfg(feature = "std")]
 mod tests {
     use test::{black_box, Bencher};
 
@@ -258,7 +265,7 @@ mod tests {
         }
         test!(ByteBuffer::<16>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16, Global>::new());
+        test!(BoxedByteBuffer::<16>::new());
     }
 
     #[test]
@@ -277,7 +284,7 @@ mod tests {
         }
         test!(ByteBuffer::<16>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16, Global>::new());
+        test!(BoxedByteBuffer::<16>::new());
     }
 
     #[test]
@@ -294,7 +301,7 @@ mod tests {
 
         test!(ByteBuffer::<16>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16, Global>::new());
+        test!(BoxedByteBuffer::<16>::new());
     }
 
     #[test]
@@ -311,7 +318,7 @@ mod tests {
 
         test!(ByteBuffer::<8>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<8, Global>::new());
+        test!(BoxedByteBuffer::<8>::new());
     }
 
     #[test]
@@ -329,7 +336,7 @@ mod tests {
 
         test!(ByteBuffer::<16>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16, Global>::new());
+        test!(BoxedByteBuffer::<16>::new());
     }
 
     #[test]
@@ -349,7 +356,7 @@ mod tests {
 
         test!(ByteBuffer::<16>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16, Global>::new());
+        test!(BoxedByteBuffer::<16>::new());
     }
 
     #[test]
@@ -366,7 +373,7 @@ mod tests {
 
         test!(ByteBuffer::<16>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16, Global>::new());
+        test!(BoxedByteBuffer::<16>::new());
     }
 
     const N: usize = 1000;

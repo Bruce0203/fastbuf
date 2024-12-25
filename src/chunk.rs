@@ -2,7 +2,7 @@ use core::{
     alloc::Allocator,
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
-    ptr::slice_from_raw_parts,
+    ptr::{slice_from_raw_parts, slice_from_raw_parts_mut},
 };
 
 use crate::{declare_impl, declare_trait};

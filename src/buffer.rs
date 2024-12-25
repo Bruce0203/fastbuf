@@ -138,7 +138,7 @@ declare_impl! {
             #[cfg(feature = "const-trait")]
             unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos as usize), slice_len) }
             #[cfg(not(feature = "const-trait"))]
-            &self.chunk.as_mut_slice()[pos..new_pos]
+            unsafe { self.chunk.as_mut_slice().get_unchecked_mut(pos..new_pos) }
         }
 
         unsafe fn get_continuous(&self, len: usize) -> &[T] {

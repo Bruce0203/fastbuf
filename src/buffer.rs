@@ -34,7 +34,7 @@ declare_impl! {
     (impl<T: Copy, const N: usize, C: Chunk<T, N, ALLOC>> Buffer<T, N, ALLOC, C>),
     (impl<T: Copy, const N: usize, C: const Chunk<T, N, ALLOC>> Buffer<T, N, ALLOC, C>) {
         #[inline(always)]
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self {
                 chunk: C::new_uninit(),
                 filled_pos: 0,
@@ -49,7 +49,7 @@ declare_impl! {
     (impl<T: Copy + Clone, A: Allocator, const N: usize, C: Chunk<T, N, A>> Buffer<T, N, A, C>),
     (impl<T: Copy + Clone, A: Allocator, const N: usize, C: const Chunk<T, N, A>> Buffer<T, N, A, C>) {
         #[inline(always)]
-        pub fn new_in(alloc: A) -> Self {
+        pub const fn new_in(alloc: A) -> Self {
             Self {
                 chunk: C::new_uninit_in(alloc),
                 filled_pos: 0,

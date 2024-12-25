@@ -1,4 +1,9 @@
-use core::{alloc::Allocator, mem::MaybeUninit, ops::{Deref, DerefMut}};
+use core::{
+    alloc::Allocator,
+    mem::MaybeUninit,
+    ops::{Deref, DerefMut},
+    ptr::slice_from_raw_parts,
+};
 
 use crate::{declare_impl, declare_trait};
 
@@ -55,12 +60,12 @@ declare_impl! {
     (impl<T, const N: usize, A: Allocator> const Chunk<T, N, A> for Box<[T; N], A>) {
         #[inline(always)]
         default fn as_slice(&self) -> &[T] {
-            self.deref()
+            unsafe { &*slice_from_raw_parts(self.as_ptr(), N)
         }
 
         #[inline(always)]
         default fn as_mut_slice(&mut self) -> &mut [T] {
-            self.deref_mut()
+            unsafe { &mut *slice_from_raw_parts_mut(self.as_mut_ptr(), N)
         }
 
         #[inline(always)]

@@ -20,7 +20,7 @@ pub struct Buffer<T: Copy, const N: usize, A: Allocator = Global, C: Chunk<T, N,
 }
 
 #[cfg(target_pointer_width = "64")]
-type LenUint = u32;
+type LenUint = i32;
 #[cfg(target_pointer_width = "32")]
 type LenUint = u16;
 
@@ -121,8 +121,8 @@ declare_impl! {
             self.filled_pos as usize
         }
 
-        unsafe fn set_filled_pos(&mut self, value: usize) {
-            self.filled_pos = value as u32;
+        unsafe fn set_filled_pos(&mut self, filled_pos: usize) {
+            self.filled_pos = filled_pos as LenUint;
         }
     }
 }
@@ -168,8 +168,8 @@ declare_impl! {
             self.pos as usize
         }
 
-        unsafe fn set_pos(&mut self, value: usize) {
-            self.pos = value as u32;
+        unsafe fn set_pos(&mut self, pos: usize) {
+            self.pos = pos as LenUint;
         }
     }
 }

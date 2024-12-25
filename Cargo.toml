@@ -12,7 +12,7 @@ include = [
 ]
 
 [features]
-default = ["std", "const-trait", "alloc"]
+default = ["std", "alloc"]
 alloc = []
 const-trait = []
 std = []

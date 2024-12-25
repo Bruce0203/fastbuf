@@ -1,6 +1,6 @@
 use core::{
     alloc::Allocator,
-    mem::MaybeUninit,
+    mem::{transmute, transmute_copy, MaybeUninit},
     ops::{Deref, DerefMut},
     ptr::{slice_from_raw_parts, slice_from_raw_parts_mut},
 };
@@ -60,12 +60,12 @@ declare_impl! {
     (impl<T, const N: usize, A: Allocator> const Chunk<T, N, A> for Box<[T; N], A>) {
         #[inline(always)]
         default fn as_slice(&self) -> &[T] {
-            unsafe { &*slice_from_raw_parts(self.as_ptr(), N) }
+            unsafe { transmute_copy::<_, &[T; N]>(&self.as_ptr()) }
         }
 
         #[inline(always)]
         default fn as_mut_slice(&mut self) -> &mut [T] {
-            unsafe { &mut *slice_from_raw_parts_mut(self.as_mut_ptr(), N) }
+            unsafe { transmute_copy::<_, &mut [T; N]>(&self.as_mut_ptr()) }
         }
 
         #[inline(always)]

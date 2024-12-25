@@ -6,8 +6,8 @@ declare_trait! {
     pub trait Chunk<(T, const N: usize, A: Allocator)>: () {
         fn new_uninit_in(alloc: A) -> Self;
         fn new_uninit() -> Self;
-        fn as_slice(&self) -> &[T; N];
-        fn as_mut_slice(&mut self) -> &mut [T; N];
+        fn as_slice(&self) -> &[T];
+        fn as_mut_slice(&mut self) -> &mut [T];
         fn as_ptr(&self) -> *const T;
         fn as_mut_ptr(&mut self) -> *mut T;
     }
@@ -16,11 +16,11 @@ declare_trait! {
 declare_impl! {
     (impl<T, const N: usize, A: Allocator> Chunk<T, N, A> for [T; N]),
     (impl<T, const N: usize, A: Allocator> const Chunk<T, N, A> for [T; N]) {
-    fn as_slice(&self) -> &[T; N] {
+    fn as_slice(&self) -> &[T] {
         self
     }
 
-    fn as_mut_slice(&mut self) -> &mut [T; N] {
+    fn as_mut_slice(&mut self) -> &mut [T] {
         self
     }
 
@@ -48,12 +48,12 @@ declare_impl! {
 declare_impl! {
     (impl<T, const N: usize, A: Allocator> Chunk<T, N, A> for Box<[T; N], A>),
     (impl<T, const N: usize, A: Allocator> const Chunk<T, N, A> for Box<[T; N], A>) {
-        default fn as_slice(&self) -> &[T; N] {
-            self
+        default fn as_slice(&self) -> &[T] {
+            &**self
         }
 
-        default fn as_mut_slice(&mut self) -> &mut [T; N] {
-            self
+        default fn as_mut_slice(&mut self) -> &mut [T] {
+            &mut **self
         }
 
         default fn new_uninit_in(alloc: A) -> Self {
@@ -78,12 +78,12 @@ declare_impl! {
 declare_impl! {
     (impl<T, const N: usize> Chunk<T, N, std::alloc::Global> for Box<[T; N], std::alloc::Global>),
     (impl<T, const N: usize> const Chunk<T, N, std::alloc::Global> for Box<[T; N], std::alloc::Global>) {
-        default fn as_slice(&self) -> &[T; N] {
-            self
+        default fn as_slice(&self) -> &[T] {
+            &**self
         }
 
-        default fn as_mut_slice(&mut self) -> &mut [T; N] {
-            self
+        default fn as_mut_slice(&mut self) -> &mut [T] {
+            &mut **self
         }
 
         default fn new_uninit_in(_alloc: std::alloc::Global) -> Self {

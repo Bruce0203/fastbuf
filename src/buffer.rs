@@ -486,7 +486,7 @@ mod tests {
         buffer.write(src);
         b.iter(|| {
             unsafe { buffer.set_pos(0) };
-            let _ = black_box(&buffer.read(N));
+            let _ = black_box(&buffer.read(black_box(N)));
         });
         black_box(&buffer);
     }

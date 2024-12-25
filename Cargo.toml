@@ -17,7 +17,3 @@ std = []
 const-trait = []
 impl_copy_for_buffer = []
 
-[profile.bench]
-strip = true
-lto = true
-codegen-units = 1

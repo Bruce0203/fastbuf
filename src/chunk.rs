@@ -60,12 +60,12 @@ declare_impl! {
     (impl<T, const N: usize, A: Allocator> const Chunk<T, N, A> for Box<[T; N], A>) {
         #[inline(always)]
         default fn as_slice(&self) -> &[T] {
-            unsafe { &*slice_from_raw_parts(self.as_ptr(), N)
+            unsafe { &*slice_from_raw_parts(self.as_ptr(), N) }
         }
 
         #[inline(always)]
         default fn as_mut_slice(&mut self) -> &mut [T] {
-            unsafe { &mut *slice_from_raw_parts_mut(self.as_mut_ptr(), N)
+            unsafe { &mut *slice_from_raw_parts_mut(self.as_mut_ptr(), N) }
         }
 
         #[inline(always)]

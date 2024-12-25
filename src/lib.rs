@@ -43,15 +43,15 @@ pub(crate) mod macros {
 
     #[macro_export]
     macro_rules! declare_trait {
-        ($visibility:vis trait $name:ident<($($generics:tt)*)>: ($($supertrait:path),*) {$($body:tt)*}) => {
+        ($visibility:vis trait $name:ident<($($generics:tt)*)>: const ($($const_supertrait:path),*), ($($supertrait:path),*) {$($body:tt)*}) => {
             #[cfg(not(feature = "const-trait"))]
-            $visibility trait $name<$($generics)*>: $($supertrait + )* {
+            $visibility trait $name<$($generics)*>: $($const_supertrait +)* $($supertrait + )* {
                 $($body)*
             }
 
             #[cfg(feature = "const-trait")]
             #[const_trait]
-            $visibility trait $name<$($generics)*>: $(const $supertrait +)* {
+            $visibility trait $name<$($generics)*>: $(const $const_supertrait +)* $($supertrait + )* {
                 $($body)*
             }
         };

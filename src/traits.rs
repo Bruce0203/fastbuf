@@ -3,7 +3,7 @@ use core::ops::{Deref, DerefMut};
 use crate::{declare_impl, declare_trait};
 
 declare_trait! {
-    pub trait Buf<(T)>: (ReadBuf<T>, WriteBuf<T>) {
+    pub trait Buf<(T: Copy + Clone)>: const (ReadBuf<T>, WriteBuf<T>), () {
         fn clear(&mut self);
         fn as_ptr(&self) -> *const T;
         fn as_mut_ptr(&mut self) -> *mut T;
@@ -12,7 +12,7 @@ declare_trait! {
 }
 
 declare_trait! {
-    pub trait WriteBuf<(T)>: () {
+    pub trait WriteBuf<(T)>: const (), () {
         fn write(&mut self, data: &[T]);
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError>;
         fn remaining_space(&self) -> usize;
@@ -22,7 +22,7 @@ declare_trait! {
 }
 
 declare_trait! {
-    pub trait ReadBuf<(T)>: () {
+    pub trait ReadBuf<(T)>: const (), () {
         fn read(&mut self, len: usize) -> &[T];
         unsafe fn get_continuous(&self, len: usize) -> &[T];
         fn remaining(&self) -> usize;
@@ -32,7 +32,7 @@ declare_trait! {
     }
 }
 
-pub trait ReadToBuf<T> {
+pub trait ReadToBuf<T: Copy + Clone> {
     #[cfg(feature = "const-trait")]
     fn read_to_buf(&mut self, buf: &mut impl const Buf<T>) -> Result<(), ()>;
     #[cfg(not(feature = "const-trait"))]
@@ -45,8 +45,8 @@ pub enum WriteBufferError {
 }
 
 declare_impl! {
-    (impl<T, S: Buf<T>> Buf<T> for &mut S),
-    (impl<T, S: const Buf<T>> const Buf<T> for &mut S) {
+    (impl<T: Copy + Clone, S: Buf<T>> Buf<T> for &mut S),
+    (impl<T: Copy + Clone, S: const Buf<T>> const Buf<T> for &mut S) {
         fn clear(&mut self) {
             self.deref_mut().clear()
         }
@@ -66,8 +66,8 @@ declare_impl! {
 }
 
 declare_impl! {
-    (impl<T, S: ReadBuf<T>> ReadBuf<T> for &mut S),
-    (impl<T, S: const ReadBuf<T>> const ReadBuf<T> for &mut S) {
+    (impl<T: Copy + Clone, S: ReadBuf<T>> ReadBuf<T> for &mut S),
+    (impl<T: Copy + Clone, S: const ReadBuf<T>> const ReadBuf<T> for &mut S) {
         fn read(&mut self, len: usize) -> &[T] {
             self.deref_mut().read(len)
         }
@@ -95,8 +95,8 @@ declare_impl! {
 }
 
 declare_impl! {
-    (impl<T, S: WriteBuf<T>>  WriteBuf<T> for &mut S),
-    (impl<T, S: const WriteBuf<T>> const WriteBuf<T> for &mut S) {
+    (impl<T: Copy + Clone, S: WriteBuf<T>>  WriteBuf<T> for &mut S),
+    (impl<T: Copy + Clone, S: const WriteBuf<T>> const WriteBuf<T> for &mut S) {
         fn write(&mut self, data: &[T]) {
             self.deref_mut().write(data)
         }

@@ -3,7 +3,7 @@ use core::{alloc::Allocator, mem::MaybeUninit, ops::Range, slice::SliceIndex};
 use crate::{declare_impl, declare_trait};
 
 declare_trait! {
-    pub trait Chunk<(T, const N: usize, A: Allocator)>: () {
+    pub trait Chunk<(T, const N: usize, A: Allocator)>: const (), (Clone) {
         fn new_uninit_in(alloc: A) -> Self;
         fn new_uninit() -> Self;
         fn as_slice(&self) -> &[T; N];
@@ -14,8 +14,8 @@ declare_trait! {
 }
 
 declare_impl! {
-    (impl<T, const N: usize, A: Allocator> Chunk<T, N, A> for [T; N]),
-    (impl<T, const N: usize, A: Allocator> const Chunk<T, N, A> for [T; N]) {
+    (impl<T: Clone, const N: usize, A: Allocator> Chunk<T, N, A> for [T; N]),
+    (impl<T: Clone, const N: usize, A: Allocator> const Chunk<T, N, A> for [T; N]) {
         #[inline(always)]
         fn as_slice(&self) -> &[T; N] {
             self
@@ -51,8 +51,8 @@ declare_impl! {
 
 #[cfg(all(not(feature = "const-trait"), feature = "std"))]
 declare_impl! {
-    (impl<T, const N: usize, A: Allocator> Chunk<T, N, A> for Box<[T; N], A>),
-    (impl<T, const N: usize, A: Allocator> const Chunk<T, N, A> for Box<[T; N], A>) {
+    (impl<T: Copy + Clone, const N: usize, A: Allocator + Clone> Chunk<T, N, A> for Box<[T; N], A>),
+    (impl<T: Copy + Clone, const N: usize, A: Allocator + Clone> const Chunk<T, N, A> for Box<[T; N], A>) {
         #[inline(always)]
         default fn as_slice(&self) -> &[T; N] {
             self
@@ -87,8 +87,8 @@ declare_impl! {
 
 #[cfg(all(not(feature = "const-trait"), feature = "std"))]
 declare_impl! {
-    (impl<T, const N: usize> Chunk<T, N, std::alloc::Global> for Box<[T; N], std::alloc::Global>),
-    (impl<T, const N: usize> const Chunk<T, N, std::alloc::Global> for Box<[T; N], std::alloc::Global>) {
+    (impl<T: Copy + Clone, const N: usize> Chunk<T, N, std::alloc::Global> for Box<[T; N], std::alloc::Global>),
+    (impl<T: Copy + Clone, const N: usize> const Chunk<T, N, std::alloc::Global> for Box<[T; N], std::alloc::Global>) {
         #[inline(always)]
         default fn as_slice(&self) -> &[T; N] {
             self

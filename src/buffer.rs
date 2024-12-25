@@ -77,6 +77,7 @@ declare_impl! {
 declare_impl! {
     (impl<T: Copy, const N: usize, A: Allocator, C: Chunk<T, N, A>> WriteBuf<T> for Buffer<T, N, A, C>),
     (impl<T: Copy, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const WriteBuf<T> for Buffer<T, N, A, C>) {
+        #[inline(never)]
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError> {
             let filled_pos = self.filled_pos as usize;
             let new_filled_pos = filled_pos + data.len();

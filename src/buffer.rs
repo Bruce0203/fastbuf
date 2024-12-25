@@ -27,6 +27,7 @@ type LenUint = u16;
 declare_impl! {
     (impl<T: Copy, const N: usize, C: Chunk<T, N, Global>> Buffer<T, N, Global, C>),
     (impl<T: Copy, const N: usize, C: const Chunk<T, N, Global>> Buffer<T, N, Global, C>) {
+        #[inline(always)]
         pub fn new() -> Self {
             Self {
                 chunk: C::new_uninit(),
@@ -41,6 +42,7 @@ declare_impl! {
 declare_impl! {
     (impl<T: Copy, A: Allocator, const N: usize, C: Chunk<T, N, A>> Buffer<T, N, A, C>),
     (impl<T: Copy, A: Allocator, const N: usize, C: const Chunk<T, N, A>> Buffer<T, N, A, C>) {
+        #[inline(always)]
         pub fn new_in(alloc: A) -> Self {
             Self {
                 chunk: C::new_uninit_in(alloc),
@@ -55,19 +57,23 @@ declare_impl! {
 declare_impl! {
     (impl<T: Copy, const N: usize, A: Allocator, C: Chunk<T, N, A>> Buf<T> for Buffer<T, N, A, C>),
     (impl<T: Copy, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const Buf<T> for Buffer<T, N, A, C>) {
+        #[inline(always)]
         fn clear(&mut self) {
             self.filled_pos = 0;
             self.pos = 0;
         }
 
+        #[inline(always)]
         fn as_ptr(&self) -> *const T {
             self.chunk.as_ptr()
         }
 
+        #[inline(always)]
         fn as_mut_ptr(&mut self) -> *mut T {
             self.chunk.as_mut_ptr()
         }
 
+        #[inline(always)]
         fn capacity(&self) -> usize {
             N
         }
@@ -115,14 +121,17 @@ declare_impl! {
             }
         }
 
+        #[inline(always)]
         fn remaining_space(&self) -> usize {
             N - self.filled_pos as usize
         }
 
+        #[inline(always)]
         fn filled_pos(&self) -> usize {
             self.filled_pos as usize
         }
 
+        #[inline(always)]
         unsafe fn set_filled_pos(&mut self, filled_pos: usize) {
             self.filled_pos = filled_pos as LenUint;
         }
@@ -141,6 +150,7 @@ declare_impl! {
             unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
         }
 
+        #[inline(always)]
         unsafe fn get_continuous(&self, len: usize) -> &[T] {
             let pos = self.pos as usize;
             let filled_pos = self.filled_pos as usize;
@@ -148,10 +158,12 @@ declare_impl! {
             unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
         }
 
+        #[inline(always)]
         fn remaining(&self) -> usize {
             (self.filled_pos - self.pos) as usize
         }
 
+        #[inline(always)]
         fn advance(&mut self, len: usize) {
             let pos = self.pos as usize;
             if cfg!(feature = "const-trait") {
@@ -167,10 +179,12 @@ declare_impl! {
             }
         }
 
+        #[inline(always)]
         fn pos(&self) -> usize {
             self.pos as usize
         }
 
+        #[inline(always)]
         unsafe fn set_pos(&mut self, pos: usize) {
             self.pos = pos as LenUint;
         }
@@ -178,6 +192,7 @@ declare_impl! {
 }
 
 impl<S: std::io::Read> ReadToBuf<u8> for S {
+    #[inline(always)]
     fn read_to_buf(&mut self, buf: &mut impl Buf<u8>) -> Result<(), ()> {
         let filled_pos = buf.filled_pos() as usize;
         let slice = unsafe {
@@ -198,6 +213,7 @@ impl<S: std::io::Read> ReadToBuf<u8> for S {
 declare_impl! {
     (impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> std::io::Write for Buffer<u8, N, A, C>),
     (impl<const N: usize, A: Allocator, C: const Chunk<u8, N, A>> std::io::Write for Buffer<u8, N, A, C>) {
+        #[inline(always)]
         fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
             let backup_filled_pos = self.filled_pos();
             self.try_write(buf)
@@ -205,6 +221,7 @@ declare_impl! {
             Ok(self.filled_pos() - backup_filled_pos)
         }
 
+        #[inline(always)]
         fn flush(&mut self) -> std::io::Result<()> {
             Ok(())
         }

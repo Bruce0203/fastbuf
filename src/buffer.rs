@@ -36,7 +36,7 @@ declare_impl! {
         #[inline(always)]
         pub const fn new() -> Self {
             Self {
-                chunk: C::new_uninit(),
+                chunk: C::new(),
                 filled_pos: 0,
                 pos: 0,
                 _marker: PhantomData,
@@ -46,16 +46,46 @@ declare_impl! {
 }
 
 declare_impl! {
-    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: Chunk<T, N, A>> Buffer<T, N, A, C>),
-    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: const Chunk<T, N, A>> Buffer<T, N, A, C>) {
+    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: Chunk<T, N, A>> Chunk<T, N, A> for  Buffer<T, N, A, C>),
+    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: const Chunk<T, N, A>> Chunk<T, N, A> for Buffer<T, N, A, C>) {
         #[inline(always)]
-        pub const fn new_in(alloc: A) -> Self {
+        fn new_in(alloc: A) -> Self {
             Self {
-                chunk: C::new_uninit_in(alloc),
+                chunk: C::new_in(alloc),
                 filled_pos: 0,
                 pos: 0,
                 _marker: PhantomData,
             }
+        }
+
+        #[inline(always)]
+        fn new() -> Self {
+            Self {
+                chunk: C::new(),
+                filled_pos : 0,
+                pos: 0,
+                _marker: PhantomData
+            }
+        }
+
+        #[inline(always)]
+        fn as_slice(&self) -> &[T; N] {
+            self.chunk.as_slice()
+        }
+
+        #[inline(always)]
+         fn as_mut_slice(&mut self) -> &mut [T; N] {
+             self.chunk.as_mut_slice()
+        }
+
+        #[inline(always)]
+         fn as_ptr(&self) -> *const T {
+             self.chunk.as_ptr()
+        }
+
+        #[inline(always)]
+        fn as_mut_ptr(&mut self) -> *mut T {
+            self.chunk.as_mut_ptr()
         }
     }
 }

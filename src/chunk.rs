@@ -4,8 +4,8 @@ use crate::{declare_impl, declare_trait};
 
 declare_trait! {
     pub trait Chunk<(T, const N: usize, A: Allocator)>: const (), (Clone, Copy) {
-        fn new_uninit_in(alloc: A) -> Self;
-        fn new_uninit() -> Self;
+        fn new_in(alloc: A) -> Self;
+        fn new() -> Self;
         fn as_slice(&self) -> &[T; N];
         fn as_mut_slice(&mut self) -> &mut [T; N];
         fn as_ptr(&self) -> *const T;
@@ -27,9 +27,9 @@ declare_impl! {
         }
 
         #[inline(always)]
-        fn new_uninit_in(alloc: A) -> Self {
+        fn new_in(alloc: A) -> Self {
             core::mem::forget(alloc);
-            <[T; N] as Chunk<T, N, A>>::new_uninit()
+            <[T; N] as Chunk<T, N, A>>::new()
         }
 
         #[inline(always)]
@@ -43,7 +43,7 @@ declare_impl! {
         }
 
         #[inline(always)]
-        fn new_uninit() -> Self {
+        fn new() -> Self {
             unsafe { MaybeUninit::uninit().assume_init() }
         }
     }

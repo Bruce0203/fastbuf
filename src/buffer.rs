@@ -4,7 +4,9 @@ use std::{
     ptr::slice_from_raw_parts_mut,
 };
 
-use crate::{const_min, declare_impl, Buf, Chunk, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError};
+use konst::min;
+
+use crate::{declare_impl, Buf, Chunk, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError};
 
 pub type BoxedBuffer<T, const N: usize, A = Global> = Buffer<T, N, A, Box<[u8; N]>>;
 
@@ -132,7 +134,7 @@ declare_impl! {
     (impl<T: Copy, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const ReadBuf<T> for Buffer<T, N, A, C>) {
         fn read(&mut self, len: usize) -> &[T] {
             let pos = self.pos as usize;
-            let slice_len = const_min!(len, self.filled_pos as usize - pos);
+            let slice_len = min!(len, self.filled_pos as usize - pos);
             let new_pos = pos + slice_len;
             self.pos = new_pos as LenUint;
             unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos as usize), slice_len) }
@@ -141,7 +143,7 @@ declare_impl! {
         unsafe fn get_continuous(&self, len: usize) -> &[T] {
             let pos = self.pos as usize;
             let filled_pos = self.filled_pos as usize;
-            let slice_len = const_min!(len, filled_pos - pos);
+            let slice_len = min!(len, filled_pos - pos);
             unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
         }
 
@@ -160,7 +162,7 @@ declare_impl! {
                     filled_pos
                 };
             } else {
-                self.pos = const_min!(self.filled_pos, (pos + len) as LenUint);
+                self.pos = min!(self.filled_pos, (pos + len) as LenUint);
             }
         }
 

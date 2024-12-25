@@ -52,20 +52,4 @@ pub(crate) mod macros {
             $($impl)* { $($body)* }
         };
     }
-
-    #[cfg(feature = "const-trait")]
-    #[macro_export]
-    macro_rules! const_min {
-        ($a:expr, $b:expr) => {
-            konst::min!($a, $b)
-        };
-    }
-
-    #[cfg(not(feature = "const-trait"))]
-    #[macro_export]
-    macro_rules! const_min {
-        ($a:expr, $b:expr) => {
-            core::cmp::min($a, $b)
-        };
-    }
 }

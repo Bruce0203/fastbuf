@@ -141,7 +141,7 @@ declare_impl! {
 declare_impl! {
     (impl<T: Copy, const N: usize, A: Allocator, C: Chunk<T, N, A>> ReadBuf<T> for Buffer<T, N, A, C>),
     (impl<T: Copy, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const ReadBuf<T> for Buffer<T, N, A, C>) {
-        #[inline(never)]
+        #[inline(always)]
         fn read(&mut self, len: usize) -> &[T] {
             let pos = self.pos as usize;
             let slice_len = const_min!(len, self.filled_pos as usize - pos);

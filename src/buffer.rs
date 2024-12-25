@@ -84,15 +84,6 @@ declare_impl! {
             let new_filled_pos = filled_pos + data.len();
             if new_filled_pos <= N {
                 self.filled_pos = new_filled_pos as LenUint;
-                #[cfg(not(feature = "const-trait"))]
-                unsafe {
-                    self.chunk
-                        .as_mut_slice()
-                        .get_unchecked_mut(filled_pos..new_filled_pos)
-                        .copy_from_slice(data);
-                }
-
-                #[cfg(feature = "const-trait")]
                 unsafe {
                     (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos),data.len())).copy_from_slice(data);
                 }
@@ -106,11 +97,7 @@ declare_impl! {
             let filled_pos = self.filled_pos as usize;
             let new_filled_pos_len = filled_pos + data.len();
             self.filled_pos = new_filled_pos_len as LenUint;
-            #[cfg(not(feature = "const-trait"))]
-            self.chunk.as_mut_slice()[filled_pos..new_filled_pos_len].copy_from_slice(data);
-            #[cfg(feature = "const-trait")]
             unsafe {
-
                 (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos), data.len())).copy_from_slice(data);
             }
         }
@@ -153,17 +140,7 @@ declare_impl! {
 
         fn advance(&mut self, len: usize) {
             let pos = self.pos as usize;
-            if cfg!(feature = "const-trait") {
-                let filled_pos = self.filled_pos;
-                let new_pos = (pos + len) as LenUint;
-                self.pos = if filled_pos > new_pos {
-                    new_pos
-                } else {
-                    filled_pos
-                };
-            } else {
-                self.pos = min!(self.filled_pos, (pos + len) as LenUint);
-            }
+            self.pos = min!(self.filled_pos, (pos + len) as LenUint);
         }
 
         fn pos(&self) -> usize {

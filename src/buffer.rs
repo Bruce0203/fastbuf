@@ -81,11 +81,12 @@ declare_impl! {
     (impl<T: Copy, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const WriteBuf<T> for Buffer<T, N, A, C>) {
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError> {
             let filled_pos = self.filled_pos as usize;
-            let new_filled_pos = filled_pos + data.len();
+            let len = data.len();
+            let new_filled_pos = filled_pos + len;
             if new_filled_pos <= N {
                 self.filled_pos = new_filled_pos as LenUint;
                 unsafe {
-                    (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos),data.len())).copy_from_slice(data);
+                    (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos),len)).copy_from_slice(data);
                 }
                 Ok(())
             } else {

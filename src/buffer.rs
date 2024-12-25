@@ -4,7 +4,7 @@ use std::{
     ptr::slice_from_raw_parts_mut,
 };
 
-use crate::{Buf, Chunk, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError};
+use crate::{const_min, declare_impl, Buf, Chunk, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError};
 
 pub type BoxedBuffer<const N: usize, A = Global> = Buffer<N, A, Box<[u8; N]>>;
 
@@ -15,118 +15,158 @@ pub struct Buffer<const N: usize, A: Allocator = Global, C: Chunk<u8, N, A> = [u
     _marker: PhantomData<A>,
 }
 
+#[cfg(target_pointer_width = "64")]
 type LenUint = u32;
+#[cfg(target_pointer_width = "32")]
+type LenUint = u16;
 
-impl<const N: usize, C: Chunk<u8, N, Global>> Buffer<N, Global, C> {
-    pub fn new() -> Self {
-        Self {
-            chunk: C::new_uninit_in(Global),
-            filled_pos: 0,
-            pos: 0,
-            _marker: PhantomData,
-        }
-    }
-}
-
-impl<A: Allocator, const N: usize, C: Chunk<u8, N, A>> Buffer<N, A, C> {
-    pub fn new_in(alloc: A) -> Self {
-        Self {
-            chunk: C::new_uninit_in(alloc),
-            filled_pos: 0,
-            pos: 0,
-            _marker: PhantomData,
-        }
-    }
-}
-
-impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> Buf for Buffer<N, A, C> {
-    fn clear(&mut self) {
-        self.filled_pos = 0;
-        self.pos = 0;
-    }
-
-    fn as_ptr(&self) -> *const u8 {
-        self.chunk.as_ptr()
-    }
-
-    fn as_mut_ptr(&mut self) -> *mut u8 {
-        self.chunk.as_mut_ptr()
-    }
-
-    fn capacity(&self) -> usize {
-        N
-    }
-}
-
-impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> WriteBuf for Buffer<N, A, C> {
-    fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError> {
-        let filled_pos = self.filled_pos as usize;
-        let new_filled_pos = filled_pos + data.len();
-        if new_filled_pos <= N {
-            self.filled_pos = new_filled_pos as LenUint;
-            unsafe {
-                self.chunk
-                    .as_mut_slice()
-                    .get_unchecked_mut(filled_pos..new_filled_pos)
-                    .copy_from_slice(data);
+declare_impl! {
+    (impl<const N: usize, C: Chunk<u8, N, Global>> Buffer<N, Global, C>),
+    (impl<const N: usize, C: const Chunk<u8, N, Global>> Buffer<N, Global, C>) {
+        pub fn new() -> Self {
+            Self {
+                chunk: C::new_uninit(),
+                filled_pos: 0,
+                pos: 0,
+                _marker: PhantomData,
             }
-            Ok(())
-        } else {
-            Err(WriteBufferError::BufferFull)
         }
-    }
-
-    fn write(&mut self, data: &[u8]) {
-        let filled_pos = self.filled_pos as usize;
-        let new_filled_pos_len = filled_pos + data.len();
-        self.filled_pos = new_filled_pos_len as LenUint;
-        self.chunk.as_mut_slice()[filled_pos..new_filled_pos_len].copy_from_slice(data);
-    }
-
-    fn remaining_space(&self) -> usize {
-        N - self.filled_pos as usize
-    }
-
-    fn filled_pos(&self) -> usize {
-        self.filled_pos as usize
-    }
-
-    unsafe fn set_filled_pos(&mut self, value: usize) {
-        self.filled_pos = value as u32;
     }
 }
 
-impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> ReadBuf for Buffer<N, A, C> {
-    fn read(&mut self, len: usize) -> &[u8] {
-        let pos = self.pos as usize;
-        let slice_len = core::cmp::min(len, self.filled_pos as usize - pos);
-        let new_pos = pos + slice_len;
-        self.pos = new_pos as LenUint;
-        unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos as usize), slice_len) }
+declare_impl! {
+    (impl<A: Allocator, const N: usize, C: Chunk<u8, N, A>> Buffer<N, A, C>),
+    (impl<A: Allocator, const N: usize, C: const Chunk<u8, N, A>> Buffer<N, A, C>) {
+        pub fn new_in(alloc: A) -> Self {
+            Self {
+                chunk: C::new_uninit_in(alloc),
+                filled_pos: 0,
+                pos: 0,
+                _marker: PhantomData,
+            }
+        }
     }
+}
 
-    unsafe fn get_continuous(&self, len: usize) -> &[u8] {
-        let pos = self.pos as usize;
-        let filled_pos = self.filled_pos as usize;
-        let slice_len = core::cmp::min(len, filled_pos - pos);
-        unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
+declare_impl! {
+    (impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> Buf for Buffer<N, A, C>),
+    (impl<const N: usize, A: Allocator, C: const Chunk<u8, N, A>> const Buf for Buffer<N, A, C>) {
+        fn clear(&mut self) {
+            self.filled_pos = 0;
+            self.pos = 0;
+        }
+
+        fn as_ptr(&self) -> *const u8 {
+            self.chunk.as_ptr()
+        }
+
+        fn as_mut_ptr(&mut self) -> *mut u8 {
+            self.chunk.as_mut_ptr()
+        }
+
+        fn capacity(&self) -> usize {
+            N
+        }
     }
+}
 
-    fn remaining(&self) -> usize {
-        (self.filled_pos - self.pos) as usize
+declare_impl! {
+    (impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> WriteBuf for Buffer<N, A, C>),
+    (impl<const N: usize, A: Allocator, C: const Chunk<u8, N, A>> const WriteBuf for Buffer<N, A, C>) {
+        fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError> {
+            let filled_pos = self.filled_pos as usize;
+            let new_filled_pos = filled_pos + data.len();
+            if new_filled_pos <= N {
+                self.filled_pos = new_filled_pos as LenUint;
+                #[cfg(not(feature = "const-trait"))]
+                unsafe {
+                    self.chunk
+                        .as_mut_slice()
+                        .get_unchecked_mut(filled_pos..new_filled_pos)
+                        .copy_from_slice(data);
+                }
+
+                #[cfg(feature = "const-trait")]
+                unsafe {
+                    (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos),data.len())).copy_from_slice(data);
+                }
+                Ok(())
+            } else {
+                Err(WriteBufferError::BufferFull)
+            }
+        }
+
+        fn write(&mut self, data: &[u8]) {
+            let filled_pos = self.filled_pos as usize;
+            let new_filled_pos_len = filled_pos + data.len();
+            self.filled_pos = new_filled_pos_len as LenUint;
+            #[cfg(not(feature = "const-trait"))]
+            self.chunk.as_mut_slice()[filled_pos..new_filled_pos_len].copy_from_slice(data);
+            #[cfg(feature = "const-trait")]
+            unsafe {
+
+                (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos), data.len())).copy_from_slice(data);
+            }
+        }
+
+        fn remaining_space(&self) -> usize {
+            N - self.filled_pos as usize
+        }
+
+        fn filled_pos(&self) -> usize {
+            self.filled_pos as usize
+        }
+
+        unsafe fn set_filled_pos(&mut self, value: usize) {
+            self.filled_pos = value as u32;
+        }
     }
+}
 
-    fn advance(&mut self, len: usize) {
-        let pos = self.pos as usize;
-        self.pos = core::cmp::min(self.filled_pos, (pos + len) as LenUint);
-    }
+declare_impl! {
+    (impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> ReadBuf for Buffer<N, A, C>),
+    (impl<const N: usize, A: Allocator, C: const Chunk<u8, N, A>> const ReadBuf for Buffer<N, A, C>) {
+        fn read(&mut self, len: usize) -> &[u8] {
+            let pos = self.pos as usize;
+            let slice_len = const_min!(len, self.filled_pos as usize - pos);
+            let new_pos = pos + slice_len;
+            self.pos = new_pos as LenUint;
+            unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos as usize), slice_len) }
+        }
 
-    fn pos(&self) -> usize {
-        self.pos as usize
-    }
+        unsafe fn get_continuous(&self, len: usize) -> &[u8] {
+            let pos = self.pos as usize;
+            let filled_pos = self.filled_pos as usize;
+            let slice_len = const_min!(len, filled_pos - pos);
+            unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
+        }
 
-    unsafe fn set_pos(&mut self, value: usize) {
-        self.pos = value as u32;
+        fn remaining(&self) -> usize {
+            (self.filled_pos - self.pos) as usize
+        }
+
+        fn advance(&mut self, len: usize) {
+            let pos = self.pos as usize;
+            if cfg!(feature = "const-trait") {
+                let filled_pos = self.filled_pos;
+                let new_pos = (pos + len) as LenUint;
+                self.pos = if filled_pos > new_pos {
+                    new_pos
+                } else {
+                    filled_pos
+                };
+            } else {
+                self.pos = const_min!(self.filled_pos, (pos + len) as LenUint);
+            }
+        }
+
+        fn pos(&self) -> usize {
+            self.pos as usize
+        }
+
+        unsafe fn set_pos(&mut self, value: usize) {
+            self.pos = value as u32;
+        }
     }
 }
 
@@ -148,22 +188,29 @@ impl<T: std::io::Read> ReadToBuf for T {
     }
 }
 
-impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> std::io::Write for Buffer<N, A, C> {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let backup_filled_pos = self.filled_pos();
-        self.try_write(buf)
-            .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "write buffer failed"))?;
-        Ok(self.filled_pos() - backup_filled_pos)
-    }
+declare_impl! {
+    (impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> std::io::Write for Buffer<N, A, C>),
+    (impl<const N: usize, A: Allocator, C: const Chunk<u8, N, A>> std::io::Write for Buffer<N, A, C>) {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            let backup_filled_pos = self.filled_pos();
+            self.try_write(buf)
+                .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "write buffer failed"))?;
+            Ok(self.filled_pos() - backup_filled_pos)
+        }
 
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
     }
 }
 
-impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> Debug for Buffer<N, A, C> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.chunk.as_slice()[self.pos()..self.filled_pos()].fmt(f)
+declare_impl! {
+    (impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> Debug for Buffer<N, A, C>),
+    (impl<const N: usize, A: Allocator, C: const Chunk<u8, N, A>> Debug for Buffer<N, A, C>) {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            self.chunk.as_slice()[self.pos()..self.filled_pos()].fmt(f)
+        }
+
     }
 }
 
@@ -186,6 +233,7 @@ mod tests {
             }
         }
         test!(Buffer::<16>::new());
+        #[cfg(all(not(feature = "const-trait"), feature = "std"))]
         test!(BoxedBuffer::<16, Global>::new());
     }
 
@@ -204,6 +252,7 @@ mod tests {
             }
         }
         test!(Buffer::<16>::new());
+        #[cfg(all(not(feature = "const-trait"), feature = "std"))]
         test!(BoxedBuffer::<16, Global>::new());
     }
 
@@ -220,6 +269,7 @@ mod tests {
         }
 
         test!(Buffer::<16>::new());
+        #[cfg(all(not(feature = "const-trait"), feature = "std"))]
         test!(BoxedBuffer::<16, Global>::new());
     }
 
@@ -236,6 +286,7 @@ mod tests {
         }}
 
         test!(Buffer::<8>::new());
+        #[cfg(all(not(feature = "const-trait"), feature = "std"))]
         test!(BoxedBuffer::<8, Global>::new());
     }
 
@@ -253,6 +304,7 @@ mod tests {
         }}
 
         test!(Buffer::<16>::new());
+        #[cfg(all(not(feature = "const-trait"), feature = "std"))]
         test!(BoxedBuffer::<16, Global>::new());
     }
 
@@ -272,6 +324,7 @@ mod tests {
         }}
 
         test!(Buffer::<16>::new());
+        #[cfg(all(not(feature = "const-trait"), feature = "std"))]
         test!(BoxedBuffer::<16, Global>::new());
     }
 
@@ -288,6 +341,7 @@ mod tests {
         }}
 
         test!(Buffer::<16>::new());
+        #[cfg(all(not(feature = "const-trait"), feature = "std"))]
         test!(BoxedBuffer::<16, Global>::new());
     }
 

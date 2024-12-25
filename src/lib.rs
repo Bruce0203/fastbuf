@@ -29,7 +29,7 @@ pub use buffer::*;
 mod chunk;
 pub use chunk::*;
 
-pub struct EmptyAlloc;
+pub(crate) struct EmptyAlloc;
 unsafe impl std::alloc::Allocator for EmptyAlloc {
     fn allocate(
         &self,

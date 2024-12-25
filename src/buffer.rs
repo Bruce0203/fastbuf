@@ -31,6 +31,11 @@ type LenUint = u32;
 #[cfg(target_pointer_width = "32")]
 type LenUint = u16;
 
+impl<T: Copy, const N: usize, A: Allocator, C: Chunk<T, N, A> + Copy + Clone> Copy
+    for Buffer<T, N, A, C>
+{
+}
+
 declare_impl! {
     (impl<T, A: Allocator, const N: usize, C: Chunk<T, N, A>> Buffer<T, N, A, C>),
     (impl<T, A: Allocator, const N: usize, C: const Chunk<T, N, A>> Buffer<T, N, A, C>) {

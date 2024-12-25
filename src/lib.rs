@@ -1,4 +1,7 @@
+#![feature(negative_impls)]
+#![feature(auto_traits)]
 #![feature(maybe_uninit_uninit_array)]
+#![feature(specialization)]
 #![feature(slice_index_methods)]
 #![feature(min_specialization)]
 #![feature(const_copy_from_slice)]

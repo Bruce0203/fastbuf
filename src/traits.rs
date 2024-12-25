@@ -62,8 +62,8 @@ pub enum WriteBufferError {
 }
 
 declare_impl! {
-    (impl<T: Copy + Clone, S: Buf<T>> Buf<T> for &mut S),
-    (impl<T: Copy + Clone, S: const Buf<T>> const Buf<T> for &mut S) {
+    (impl<T, S: Buf<T>> Buf<T> for &mut S),
+    (impl<T, S: const Buf<T>> const Buf<T> for &mut S) {
         fn clear(&mut self) {
             self.deref_mut().clear()
         }
@@ -83,8 +83,8 @@ declare_impl! {
 }
 
 declare_impl! {
-    (impl<T: Copy + Clone, S: ReadBuf<T>> ReadBuf<T> for &mut S),
-    (impl<T: Copy + Clone, S: const ReadBuf<T>> const ReadBuf<T> for &mut S) {
+    (impl<T, S: ReadBuf<T>> ReadBuf<T> for &mut S),
+    (impl<T, S: const ReadBuf<T>> const ReadBuf<T> for &mut S) {
         fn read(&mut self, len: usize) -> &[T] {
             self.deref_mut().read(len)
         }
@@ -112,8 +112,8 @@ declare_impl! {
 }
 
 declare_impl! {
-    (impl<T: Copy + Clone, S: WriteBuf<T>>  WriteBuf<T> for &mut S),
-    (impl<T: Copy + Clone, S: const WriteBuf<T>> const WriteBuf<T> for &mut S) {
+    (impl<T, S: WriteBuf<T>>  WriteBuf<T> for &mut S),
+    (impl<T, S: const WriteBuf<T>> const WriteBuf<T> for &mut S) {
         fn write(&mut self, data: &[T]) {
             self.deref_mut().write(data)
         }

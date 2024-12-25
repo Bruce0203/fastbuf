@@ -32,8 +32,8 @@ type LenUint = u32;
 type LenUint = u16;
 
 declare_impl! {
-    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: Chunk<T, N, A>> Buffer<T, N, A, C>),
-    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: const Chunk<T, N, A>> Buffer<T, N, A, C>) {
+    (impl<T, A: Allocator, const N: usize, C: Chunk<T, N, A>> Buffer<T, N, A, C>),
+    (impl<T, A: Allocator, const N: usize, C: const Chunk<T, N, A>> Buffer<T, N, A, C>) {
         declare_fn! {
             #[inline(always)]
             pub fn new_in(alloc: A) -> Self {
@@ -58,8 +58,8 @@ declare_impl! {
 }
 
 declare_impl! {
-    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: Chunk<T, N, A>> Chunk<T, N, A> for  Buffer<T, N, A, C>),
-    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: const Chunk<T, N, A>> const Chunk<T, N, A> for Buffer<T, N, A, C>) {
+    (impl<T, A: Allocator, const N: usize, C: Chunk<T, N, A>> Chunk<T, N, A> for  Buffer<T, N, A, C>),
+    (impl<T, A: Allocator, const N: usize, C: const Chunk<T, N, A>> const Chunk<T, N, A> for Buffer<T, N, A, C>) {
         #[inline(always)]
         fn new_in(alloc: A) -> Self {
             Self {
@@ -112,8 +112,8 @@ declare_impl! {
     }
 }
 
-impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A> + const ConstClone> const
-    ConstClone for Buffer<T, N, A, C>
+impl<T, const N: usize, A: Allocator, C: Chunk<T, N, A> + const ConstClone> const ConstClone
+    for Buffer<T, N, A, C>
 {
     fn const_clone(&self) -> Self {
         Self {
@@ -125,9 +125,7 @@ impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A> + const Co
     }
 }
 
-impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A> + Clone> Clone
-    for Buffer<T, N, A, C>
-{
+impl<T, const N: usize, A: Allocator, C: Chunk<T, N, A> + Clone> Clone for Buffer<T, N, A, C> {
     fn clone(&self) -> Self {
         Self {
             chunk: self.chunk.clone(),
@@ -139,8 +137,8 @@ impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A> + Clone> C
 }
 
 declare_impl! {
-    (impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A>> Buf<T> for Buffer<T, N, A, C>),
-    (impl<T: Copy + Clone, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const Buf<T> for Buffer<T, N, A, C>) {
+    (impl<T: Copy, const N: usize, A: Allocator, C: Chunk<T, N, A>> Buf<T> for Buffer<T, N, A, C>),
+    (impl<T: Copy, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const Buf<T> for Buffer<T, N, A, C>) {
         #[inline(always)]
         fn clear(&mut self) {
             self.filled_pos = 0;
@@ -165,8 +163,8 @@ declare_impl! {
 }
 
 declare_impl! {
-    (impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A>> WriteBuf<T> for Buffer<T, N, A, C>),
-    (impl<T: Copy + Clone, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const WriteBuf<T> for Buffer<T, N, A, C>) {
+    (impl<T: Copy, const N: usize, A: Allocator, C: Chunk<T, N, A>> WriteBuf<T> for Buffer<T, N, A, C>),
+    (impl<T: Copy, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const WriteBuf<T> for Buffer<T, N, A, C>) {
         #[inline(always)]
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError> {
             let filled_pos = self.filled_pos as usize;
@@ -220,11 +218,12 @@ declare_impl! {
             self.filled_pos = filled_pos as LenUint;
         }
     }
+
 }
 
 declare_impl! {
-    (impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A>> ReadBuf<T> for Buffer<T, N, A, C>),
-    (impl<T: Copy + Clone, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const ReadBuf<T> for Buffer<T, N, A, C>) {
+    (impl<T, const N: usize, A: Allocator, C: Chunk<T, N, A>> ReadBuf<T> for Buffer<T, N, A, C>),
+    (impl<T, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const ReadBuf<T> for Buffer<T, N, A, C>) {
         #[inline(always)]
         fn read(&mut self, len: usize) -> &[T] {
             let pos = self.pos as usize;
@@ -315,8 +314,8 @@ declare_impl! {
 }
 
 declare_impl! {
-    (impl<T: Debug + Copy, const N: usize, A: Allocator, C: Chunk<T, N, A>> Debug for Buffer<T, N, A, C>),
-    (impl<T: Debug + Copy, const N: usize, A: Allocator, C: const Chunk<T, N, A>> Debug for Buffer<T, N, A, C>) {
+    (impl<T: Copy + Debug, const N: usize, A: Allocator, C: Chunk<T, N, A>> Debug for Buffer<T, N, A, C>),
+    (impl<T: Copy + Debug, const N: usize, A: Allocator, C: const Chunk<T, N, A>> Debug for Buffer<T, N, A, C>) {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             self.chunk.as_slice()[self.pos()..self.filled_pos()].fmt(f)
         }
@@ -456,6 +455,7 @@ mod tests {
         test!(BoxedByteBuffer::<16>::new());
     }
 
+    #[cfg(feature = "const-trait")]
     #[test]
     fn test_clone() {
         const BUF: ByteBuffer<1000> = Buffer::<u8, 1000, std::alloc::Global>::new_zeroed();

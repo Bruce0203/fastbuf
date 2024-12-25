@@ -1,3 +1,4 @@
+#![feature(maybe_uninit_uninit_array)]
 #![feature(slice_index_methods)]
 #![feature(min_specialization)]
 #![feature(const_copy_from_slice)]
@@ -29,33 +30,17 @@ pub struct EmptyAlloc;
 unsafe impl std::alloc::Allocator for EmptyAlloc {
     fn allocate(
         &self,
-        layout: std::alloc::Layout,
+        _layout: std::alloc::Layout,
     ) -> Result<std::ptr::NonNull<[u8]>, std::alloc::AllocError> {
         unreachable!()
     }
 
-    unsafe fn deallocate(&self, ptr: std::ptr::NonNull<u8>, layout: std::alloc::Layout) {
+    unsafe fn deallocate(&self, _ptr: std::ptr::NonNull<u8>, _layout: std::alloc::Layout) {
         unreachable!()
     }
 }
 
 pub(crate) mod macros {
-
-    #[macro_export]
-    macro_rules! declare_trait {
-        ($visibility:vis trait $name:ident<($($generics:tt)*)>: const ($($const_supertrait:path),*), ($($supertrait:path),*) {$($body:tt)*}) => {
-            #[cfg(not(feature = "const-trait"))]
-            $visibility trait $name<$($generics)*>: $($const_supertrait +)* $($supertrait + )* {
-                $($body)*
-            }
-
-            #[cfg(feature = "const-trait")]
-            #[const_trait]
-            $visibility trait $name<$($generics)*>: $(const $const_supertrait +)* $($supertrait + )* {
-                $($body)*
-            }
-        };
-    }
 
     #[macro_export]
     macro_rules! declare_impl {

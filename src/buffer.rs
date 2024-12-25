@@ -1,7 +1,9 @@
 use core::{fmt::Debug, marker::PhantomData, ptr::slice_from_raw_parts};
 use std::{alloc::Allocator, ptr::slice_from_raw_parts_mut};
 
-use crate::{const_min, declare_impl, Buf, Chunk, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError};
+use crate::{
+    const_min, declare_impl, Buf, Chunk, ConstClone, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError,
+};
 
 #[cfg(feature = "std")]
 type ALLOC = std::alloc::Global;
@@ -16,14 +18,12 @@ pub type ByteBuffer<const N: usize, A = ALLOC> = Buffer<u8, N, A>;
 #[cfg(feature = "std")]
 pub type BoxedByteBuffer<const N: usize, A = ALLOC> = BoxedBuffer<u8, N, A>;
 
-pub struct Buffer<T: Copy, const N: usize, A: Allocator = ALLOC, C: Chunk<T, N, A> = [T; N]> {
+pub struct Buffer<T, const N: usize, A: Allocator = ALLOC, C: Chunk<T, N, A> = [T; N]> {
     chunk: C,
     filled_pos: LenUint,
     pos: LenUint,
     _marker: PhantomData<(A, T)>,
 }
-
-impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A>> Copy for Buffer<T, N, A, C> {}
 
 #[cfg(target_pointer_width = "64")]
 type LenUint = u32;
@@ -31,23 +31,8 @@ type LenUint = u32;
 type LenUint = u16;
 
 declare_impl! {
-    (impl<T: Copy, const N: usize, C: Chunk<T, N, ALLOC>> Buffer<T, N, ALLOC, C>),
-    (impl<T: Copy, const N: usize, C: const Chunk<T, N, ALLOC>> Buffer<T, N, ALLOC, C>) {
-        #[inline(always)]
-        pub const fn new() -> Self {
-            Self {
-                chunk: C::new(),
-                filled_pos: 0,
-                pos: 0,
-                _marker: PhantomData,
-            }
-        }
-    }
-}
-
-declare_impl! {
     (impl<T: Copy + Clone, A: Allocator, const N: usize, C: Chunk<T, N, A>> Chunk<T, N, A> for  Buffer<T, N, A, C>),
-    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: const Chunk<T, N, A>> Chunk<T, N, A> for Buffer<T, N, A, C>) {
+    (impl<T: Copy + Clone, A: Allocator, const N: usize, C: const Chunk<T, N, A>> const Chunk<T, N, A> for Buffer<T, N, A, C>) {
         #[inline(always)]
         fn new_in(alloc: A) -> Self {
             Self {
@@ -62,6 +47,16 @@ declare_impl! {
         fn new() -> Self {
             Self {
                 chunk: C::new(),
+                filled_pos : 0,
+                pos: 0,
+                _marker: PhantomData
+            }
+        }
+
+        #[inline(always)]
+        fn new_zeroed() -> Self {
+            Self {
+                chunk: C::new_zeroed(),
                 filled_pos : 0,
                 pos: 0,
                 _marker: PhantomData
@@ -90,7 +85,20 @@ declare_impl! {
     }
 }
 
-impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A>> Clone
+impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A> + const ConstClone> const
+    ConstClone for Buffer<T, N, A, C>
+{
+    fn const_clone(&self) -> Self {
+        Self {
+            chunk: ConstClone::const_clone(&self.chunk),
+            filled_pos: self.filled_pos,
+            pos: self.pos,
+            _marker: self._marker,
+        }
+    }
+}
+
+impl<T: Copy + Clone, const N: usize, A: Allocator, C: Chunk<T, N, A> + Clone> Clone
     for Buffer<T, N, A, C>
 {
     fn clone(&self) -> Self {
@@ -421,6 +429,12 @@ mod tests {
         test!(BoxedByteBuffer::<16>::new());
     }
 
+    #[test]
+    fn test_clone() {
+        const BUF: ByteBuffer<1000> = Buffer::<u8, 1000, std::alloc::Global>::new_zeroed();
+        let buffer_cloned = { BUF.const_clone() };
+    }
+
     const N: usize = 1000;
 
     #[bench]
@@ -457,5 +471,13 @@ mod tests {
             let _ = black_box(&buffer.read(N));
         });
         black_box(&buffer);
+    }
+
+    #[bench]
+    fn bench_buffer_new(b: &mut Bencher) {
+        b.iter(|| {
+            let ref mut buffer: ByteBuffer<N> = Buffer::new();
+            black_box(&buffer);
+        });
     }
 }

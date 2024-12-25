@@ -1,9 +1,42 @@
 use core::ops::{Deref, DerefMut};
+use std::alloc::Allocator;
 
-use crate::{declare_impl, declare_trait};
+use crate::{declare_impl, Buffer};
+
+macro_rules! declare_trait {
+        ($visibility:vis trait $name:ident<($($generics:tt)*)>: const ($($const_supertrait:path),*), ($($supertrait:path),*) {$($body:tt)*}) => {
+            #[cfg(not(feature = "const-trait"))]
+            $visibility trait $name<$($generics)*>: $($const_supertrait +)* $($supertrait + )* {
+                $($body)*
+            }
+
+            #[cfg(feature = "const-trait")]
+            #[const_trait]
+            $visibility trait $name<$($generics)*>: $(const $const_supertrait +)* $($supertrait + )* {
+                $($body)*
+            }
+        };
+    }
 
 declare_trait! {
-    pub trait Buf<(T: Copy + Clone)>: const (ReadBuf<T>, WriteBuf<T>), () {
+    pub trait Chunk<(T, const N: usize, A: Allocator)>: const (), () {
+        fn new_in(alloc: A) -> Self;
+        fn new_zeroed() -> Self;
+        fn new() -> Self;
+        fn as_slice(&self) -> &[T; N];
+        fn as_mut_slice(&mut self) -> &mut [T; N];
+        fn as_ptr(&self) -> *const T;
+        fn as_mut_ptr(&mut self) -> *mut T;
+    }
+}
+
+#[const_trait]
+pub trait ConstClone {
+    fn const_clone(&self) -> Self;
+}
+
+declare_trait! {
+    pub trait Buf<(T)>: const (ReadBuf<T>, WriteBuf<T>), () {
         fn clear(&mut self);
         fn as_ptr(&self) -> *const T;
         fn as_mut_ptr(&mut self) -> *mut T;
@@ -32,7 +65,7 @@ declare_trait! {
     }
 }
 
-pub trait ReadToBuf<T: Copy + Clone> {
+pub trait ReadToBuf<T> {
     #[cfg(feature = "const-trait")]
     fn read_to_buf(&mut self, buf: &mut impl const Buf<T>) -> Result<(), ()>;
     #[cfg(not(feature = "const-trait"))]

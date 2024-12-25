@@ -1,17 +1,6 @@
-use core::{alloc::Allocator, mem::MaybeUninit, ops::Range, slice::SliceIndex};
+use core::{alloc::Allocator, mem::MaybeUninit};
 
-use crate::{declare_impl, declare_trait};
-
-declare_trait! {
-    pub trait Chunk<(T, const N: usize, A: Allocator)>: const (), (Clone, Copy) {
-        fn new_in(alloc: A) -> Self;
-        fn new() -> Self;
-        fn as_slice(&self) -> &[T; N];
-        fn as_mut_slice(&mut self) -> &mut [T; N];
-        fn as_ptr(&self) -> *const T;
-        fn as_mut_ptr(&mut self) -> *mut T;
-    }
-}
+use crate::{declare_impl, Chunk, ConstClone};
 
 declare_impl! {
     (impl<T: Copy + Clone, const N: usize, A: Allocator> Chunk<T, N, A> for [T; N]),
@@ -46,13 +35,32 @@ declare_impl! {
         fn new() -> Self {
             unsafe { MaybeUninit::uninit().assume_init() }
         }
+
+        #[inline(always)]
+        fn new_zeroed() -> Self {
+            unsafe { MaybeUninit::zeroed().assume_init() }
+        }
+    }
+}
+
+impl<T: Copy + Clone, const N: usize> const ConstClone for Box<[T; N]> {
+    fn const_clone(&self) -> Self {
+        unreachable!()
+    }
+}
+
+impl<T: Copy + Clone, const N: usize> const ConstClone for [T; N] {
+    fn const_clone(&self) -> Self {
+        let mut slice: [T; N] = unsafe { MaybeUninit::uninit().assume_init() };
+        slice.copy_from_slice(self);
+        slice
     }
 }
 
 #[cfg(all(not(feature = "const-trait"), feature = "std"))]
 declare_impl! {
-    (impl<T: Copy + Clone, const N: usize, A: Allocator + Clone> Chunk<T, N, A> for Box<[T; N], A>),
-    (impl<T: Copy + Clone, const N: usize, A: Allocator + Clone> const Chunk<T, N, A> for Box<[T; N], A>) {
+    (impl<T: Copy + Clone, const N: usize, A: Allocator + Copy + Clone> Chunk<T, N, A> for Box<[T; N], A>),
+    (impl<T: Copy + Clone, const N: usize, A: Allocator + Copy + Clone> const Chunk<T, N, A> for Box<[T; N], A>) {
         #[inline(always)]
         default fn as_slice(&self) -> &[T; N] {
             self
@@ -64,7 +72,7 @@ declare_impl! {
         }
 
         #[inline(always)]
-        default fn new_uninit_in(alloc: A) -> Self {
+        default fn new_in(alloc: A) -> Self {
             unsafe { Box::new_uninit_in(alloc).assume_init() }
         }
 
@@ -79,7 +87,12 @@ declare_impl! {
         }
 
         #[inline(always)]
-        default fn new_uninit() -> Self {
+        default fn new() -> Self {
+            unreachable!()
+        }
+
+        #[inline(always)]
+        default fn new_zeroed() -> Self {
             unreachable!()
         }
     }
@@ -100,7 +113,7 @@ declare_impl! {
         }
 
         #[inline(always)]
-        default fn new_uninit_in(_alloc: std::alloc::Global) -> Self {
+        default fn new_in(_alloc: std::alloc::Global) -> Self {
             unreachable!()
         }
 
@@ -115,8 +128,13 @@ declare_impl! {
         }
 
         #[inline(always)]
-        default fn new_uninit() -> Self {
+        default fn new() -> Self {
             unsafe { Box::new_uninit().assume_init() }
+        }
+
+        #[inline(always)]
+        default fn new_zeroed() -> Self {
+            unsafe { Box::new_zeroed().assume_init() }
         }
     }
 }

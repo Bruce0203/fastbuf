@@ -3,18 +3,18 @@ use core::ops::{Deref, DerefMut};
 use crate::{declare_impl, declare_trait};
 
 declare_trait! {
-    pub trait Buf<()>: (ReadBuf, WriteBuf) {
+    pub trait Buf<(T)>: (ReadBuf<T>, WriteBuf<T>) {
         fn clear(&mut self);
-        fn as_ptr(&self) -> *const u8;
-        fn as_mut_ptr(&mut self) -> *mut u8;
+        fn as_ptr(&self) -> *const T;
+        fn as_mut_ptr(&mut self) -> *mut T;
         fn capacity(&self) -> usize;
     }
 }
 
 declare_trait! {
-    pub trait WriteBuf<()>: () {
-        fn write(&mut self, data: &[u8]);
-        fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError>;
+    pub trait WriteBuf<(T)>: () {
+        fn write(&mut self, data: &[T]);
+        fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError>;
         fn remaining_space(&self) -> usize;
         fn filled_pos(&self) -> usize;
         unsafe fn set_filled_pos(&mut self, filled_pos: usize);
@@ -22,9 +22,9 @@ declare_trait! {
 }
 
 declare_trait! {
-    pub trait ReadBuf<()>: () {
-        fn read(&mut self, len: usize) -> &[u8];
-        unsafe fn get_continuous(&self, len: usize) -> &[u8];
+    pub trait ReadBuf<(T)>: () {
+        fn read(&mut self, len: usize) -> &[T];
+        unsafe fn get_continuous(&self, len: usize) -> &[T];
         fn remaining(&self) -> usize;
         fn advance(&mut self, len: usize);
         fn pos(&self) -> usize;
@@ -32,11 +32,11 @@ declare_trait! {
     }
 }
 
-pub trait ReadToBuf {
+pub trait ReadToBuf<T> {
     #[cfg(feature = "const-trait")]
-    fn read_to_buf(&mut self, buf: &mut impl const Buf) -> Result<(), ()>;
+    fn read_to_buf(&mut self, buf: &mut impl const Buf<T>) -> Result<(), ()>;
     #[cfg(not(feature = "const-trait"))]
-    fn read_to_buf(&mut self, buf: &mut impl Buf) -> Result<(), ()>;
+    fn read_to_buf(&mut self, buf: &mut impl Buf<T>) -> Result<(), ()>;
 }
 
 #[derive(Debug)]
@@ -45,17 +45,17 @@ pub enum WriteBufferError {
 }
 
 declare_impl! {
-    (impl<T: Buf>  Buf for &mut T),
-    (impl<T: const Buf> const Buf for &mut T) {
+    (impl<T, S: Buf<T>> Buf<T> for &mut S),
+    (impl<T, S: const Buf<T>> const Buf<T> for &mut S) {
         fn clear(&mut self) {
             self.deref_mut().clear()
         }
 
-        fn as_ptr(&self) -> *const u8 {
+        fn as_ptr(&self) -> *const T {
             self.deref().as_ptr()
         }
 
-        fn as_mut_ptr(&mut self) -> *mut u8 {
+        fn as_mut_ptr(&mut self) -> *mut T {
             self.deref_mut().as_mut_ptr()
         }
 
@@ -66,13 +66,13 @@ declare_impl! {
 }
 
 declare_impl! {
-    (impl<T:  ReadBuf>  ReadBuf for &mut T),
-    (impl<T: const ReadBuf> const ReadBuf for &mut T) {
-        fn read(&mut self, len: usize) -> &[u8] {
+    (impl<T, S: ReadBuf<T>> ReadBuf<T> for &mut S),
+    (impl<T, S: const ReadBuf<T>> const ReadBuf<T> for &mut S) {
+        fn read(&mut self, len: usize) -> &[T] {
             self.deref_mut().read(len)
         }
 
-        unsafe fn get_continuous(&self, len: usize) -> &[u8] {
+        unsafe fn get_continuous(&self, len: usize) -> &[T] {
             self.deref().get_continuous(len)
         }
 
@@ -95,13 +95,13 @@ declare_impl! {
 }
 
 declare_impl! {
-    (impl<T:  WriteBuf>  WriteBuf for &mut T),
-    (impl<T: const WriteBuf> const WriteBuf for &mut T) {
-        fn write(&mut self, data: &[u8]) {
+    (impl<T, S: WriteBuf<T>>  WriteBuf<T> for &mut S),
+    (impl<T, S: const WriteBuf<T>> const WriteBuf<T> for &mut S) {
+        fn write(&mut self, data: &[T]) {
             self.deref_mut().write(data)
         }
 
-        fn try_write(&mut self, data: &[u8]) -> Result<(), WriteBufferError> {
+        fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError> {
             self.deref_mut().try_write(data)
         }
 

@@ -12,11 +12,10 @@ include = [
 ]
 
 [features]
-default = ["std",  "alloc"]
+default = ["std", "alloc"]
 alloc = []
 const-trait = []
 std = []
-
 
 [profile.bench]
 strip = true

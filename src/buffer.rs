@@ -20,7 +20,7 @@ pub struct Buffer<T: Copy, const N: usize, A: Allocator = Global, C: Chunk<T, N,
 }
 
 #[cfg(target_pointer_width = "64")]
-type LenUint = i32;
+type LenUint = u32;
 #[cfg(target_pointer_width = "32")]
 type LenUint = u16;
 

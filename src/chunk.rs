@@ -48,13 +48,13 @@ declare_const_impl! {
     (impl<T: Copy + Clone, const N: usize, A: Allocator + Copy + Clone> Chunk<T, N, A> for Box<[T; N], A>),
     (impl<T: Copy + Clone, const N: usize, A: Allocator + Copy + Clone> const Chunk<T, N, A> for Box<[T; N], A>) {
         #[inline(always)]
-        default fn as_slice(&self) -> &[T; N] {
-            self
+        default fn as_slice(&self) -> &[T] {
+            &**self
         }
 
         #[inline(always)]
-        default fn as_mut_slice(&mut self) -> &mut [T; N] {
-            self
+        default fn as_mut_slice(&mut self) -> &mut [T] {
+            &mut **self
         }
 
         #[inline(always)]
@@ -89,13 +89,13 @@ declare_const_impl! {
     (impl<T: Copy + Clone, const N: usize> Chunk<T, N, std::alloc::Global> for Box<[T; N], std::alloc::Global>),
     (impl<T: Copy + Clone, const N: usize> const Chunk<T, N, std::alloc::Global> for Box<[T; N], std::alloc::Global>) {
         #[inline(always)]
-        default fn as_slice(&self) -> &[T; N] {
-            self
+        default fn as_slice(&self) -> &[T] {
+            &**self
         }
 
         #[inline(always)]
-        default fn as_mut_slice(&mut self) -> &mut [T; N] {
-            self
+        default fn as_mut_slice(&mut self) -> &mut [T] {
+            &mut **self
         }
 
         #[inline(always)]

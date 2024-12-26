@@ -2,7 +2,8 @@ use core::{fmt::Debug, marker::PhantomData, ptr::slice_from_raw_parts};
 use std::{alloc::Allocator, ptr::slice_from_raw_parts_mut};
 
 use crate::{
-    const_min, declare_fn, declare_impl, Buf, Chunk, ReadBuf, ReadToBuf, WriteBuf, WriteBufferError,
+    const_min, declare_const_fn, declare_const_impl, Buf, Chunk, ReadBuf, ReadToBuf, WriteBuf,
+    WriteBufferError,
 };
 
 #[cfg(feature = "std")]
@@ -36,24 +37,24 @@ impl<T: Copy, const N: usize, A: Allocator, C: Chunk<T, N, A> + Copy + Clone> Co
 {
 }
 
-declare_impl! {
+declare_const_impl! {
     (impl<T, A: Allocator, const N: usize, C: Chunk<T, N, A>> Buffer<T, N, A, C>),
     (impl<T, A: Allocator, const N: usize, C: const Chunk<T, N, A>> Buffer<T, N, A, C>) {
-        declare_fn! {
+        declare_const_fn! {
             #[inline(always)]
             pub fn new_in(alloc: A) -> Self {
                 Chunk::new_in(alloc)
             }
         }
 
-        declare_fn! {
+        declare_const_fn! {
             #[inline(always)]
             pub fn new() -> Self {
                Chunk::new()
             }
         }
 
-        declare_fn! {
+        declare_const_fn! {
             #[inline(always)]
             pub fn new_zeroed() -> Self {
                 Chunk::new_zeroed()
@@ -62,7 +63,7 @@ declare_impl! {
     }
 }
 
-declare_impl! {
+declare_const_impl! {
     (impl<T, A: Allocator, const N: usize, C: Chunk<T, N, A>> Chunk<T, N, A> for  Buffer<T, N, A, C>),
     (impl<T, A: Allocator, const N: usize, C: const Chunk<T, N, A>> const Chunk<T, N, A> for Buffer<T, N, A, C>) {
         #[inline(always)]
@@ -128,7 +129,7 @@ impl<T, const N: usize, A: Allocator, C: Chunk<T, N, A> + Clone> Clone for Buffe
     }
 }
 
-declare_impl! {
+declare_const_impl! {
     (impl<T: Copy, const N: usize, A: Allocator, C: Chunk<T, N, A>> Buf<T> for Buffer<T, N, A, C>),
     (impl<T: Copy, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const Buf<T> for Buffer<T, N, A, C>) {
         #[inline(always)]
@@ -154,7 +155,7 @@ declare_impl! {
     }
 }
 
-declare_impl! {
+declare_const_impl! {
     (impl<T: Copy, const N: usize, A: Allocator, C: Chunk<T, N, A>> WriteBuf<T> for Buffer<T, N, A, C>),
     (impl<T: Copy, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const WriteBuf<T> for Buffer<T, N, A, C>) {
         #[inline(always)]
@@ -213,7 +214,7 @@ declare_impl! {
 
 }
 
-declare_impl! {
+declare_const_impl! {
     (impl<T, const N: usize, A: Allocator, C: Chunk<T, N, A>> ReadBuf<T> for Buffer<T, N, A, C>),
     (impl<T, const N: usize, A: Allocator, C: const Chunk<T, N, A>> const ReadBuf<T> for Buffer<T, N, A, C>) {
         #[inline(always)]
@@ -287,7 +288,7 @@ impl<S: std::io::Read> ReadToBuf<u8> for S {
 }
 
 #[cfg(feature = "std")]
-declare_impl! {
+declare_const_impl! {
     (impl<const N: usize, A: Allocator, C: Chunk<u8, N, A>> std::io::Write for Buffer<u8, N, A, C>),
     (impl<const N: usize, A: Allocator, C: const Chunk<u8, N, A>> std::io::Write for Buffer<u8, N, A, C>) {
         #[inline(always)]
@@ -305,7 +306,7 @@ declare_impl! {
     }
 }
 
-declare_impl! {
+declare_const_impl! {
     (impl<T: Copy + Debug, const N: usize, A: Allocator, C: Chunk<T, N, A>> Debug for Buffer<T, N, A, C>),
     (impl<T: Copy + Debug, const N: usize, A: Allocator, C: const Chunk<T, N, A>> Debug for Buffer<T, N, A, C>) {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -451,6 +452,8 @@ mod tests {
     #[test]
     fn test_clone() {
         const BUF: ByteBuffer<1000> = Buffer::<u8, 1000, std::alloc::Global>::new_zeroed();
+        let cloned_buf = BUF.clone();
+        assert_eq!(BUF.as_slice(), cloned_buf.as_slice());
     }
 
     const N: usize = 1000;

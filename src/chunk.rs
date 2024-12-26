@@ -1,8 +1,8 @@
 use core::{alloc::Allocator, mem::MaybeUninit};
 
-use crate::{declare_impl, Chunk};
+use crate::{declare_const_impl, Chunk};
 
-declare_impl! {
+declare_const_impl! {
     (impl<T: Copy + Clone, const N: usize, A: Allocator> Chunk<T, N, A> for [T; N]),
     (impl<T: Copy + Clone, const N: usize, A: Allocator> const Chunk<T, N, A> for [T; N]) {
         #[inline(always)]
@@ -44,7 +44,7 @@ declare_impl! {
 }
 
 #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-declare_impl! {
+declare_const_impl! {
     (impl<T: Copy + Clone, const N: usize, A: Allocator + Copy + Clone> Chunk<T, N, A> for Box<[T; N], A>),
     (impl<T: Copy + Clone, const N: usize, A: Allocator + Copy + Clone> const Chunk<T, N, A> for Box<[T; N], A>) {
         #[inline(always)]
@@ -85,7 +85,7 @@ declare_impl! {
 }
 
 #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-declare_impl! {
+declare_const_impl! {
     (impl<T: Copy + Clone, const N: usize> Chunk<T, N, std::alloc::Global> for Box<[T; N], std::alloc::Global>),
     (impl<T: Copy + Clone, const N: usize> const Chunk<T, N, std::alloc::Global> for Box<[T; N], std::alloc::Global>) {
         #[inline(always)]

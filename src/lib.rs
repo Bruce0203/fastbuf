@@ -1,7 +1,6 @@
 #![feature(negative_impls)]
 #![feature(auto_traits)]
 #![feature(maybe_uninit_uninit_array)]
-#![feature(specialization)]
 #![feature(slice_index_methods)]
 #![feature(min_specialization)]
 #![feature(const_copy_from_slice)]
@@ -28,7 +27,10 @@ pub use buffer::*;
 
 mod chunk;
 
+#[cfg(not(feature = "std"))]
 pub(crate) struct EmptyAlloc;
+
+#[cfg(not(feature = "std"))]
 unsafe impl std::alloc::Allocator for EmptyAlloc {
     fn allocate(
         &self,
@@ -45,7 +47,7 @@ unsafe impl std::alloc::Allocator for EmptyAlloc {
 pub(crate) mod macros {
 
     #[macro_export]
-    macro_rules! declare_fn {
+    macro_rules! declare_const_fn {
         ($(#[$($attrs:tt)*])* $visibility:vis fn $($tokens:tt)*) => {
             #[cfg(feature = "const-trait")]
             $(#[$($attrs)*])*
@@ -57,7 +59,7 @@ pub(crate) mod macros {
     }
 
     #[macro_export]
-    macro_rules! declare_trait {
+    macro_rules! declare_const_trait {
         ($visibility:vis trait $name:ident<($($generics:tt)*)>
          : const ($($const_supertrait:path),*), ($($supertrait:path),*) {$($body:tt)*}) => {
             #[cfg(not(feature = "const-trait"))]
@@ -74,7 +76,7 @@ pub(crate) mod macros {
     }
 
     #[macro_export]
-    macro_rules! declare_impl {
+    macro_rules! declare_const_impl {
         (($($impl:tt)*), ($($impl_const:tt)*) {$($body:tt)*}) => {
             #[cfg(feature = "const-trait")]
             $($impl_const)* { $($body)* }

@@ -1,8 +1,8 @@
-use crate::{declare_impl, declare_trait};
+use crate::{declare_const_impl, declare_const_trait};
 use core::ops::{Deref, DerefMut};
 use std::alloc::Allocator;
 
-declare_trait! {
+declare_const_trait! {
     pub trait Chunk<(T, const N: usize, A: Allocator)>: const (), () {
         fn new_in(alloc: A) -> Self;
         fn new_zeroed() -> Self;
@@ -14,7 +14,7 @@ declare_trait! {
     }
 }
 
-declare_trait! {
+declare_const_trait! {
     pub trait Buf<(T)>: const (ReadBuf<T>, WriteBuf<T>), () {
         fn clear(&mut self);
         fn as_ptr(&self) -> *const T;
@@ -23,7 +23,7 @@ declare_trait! {
     }
 }
 
-declare_trait! {
+declare_const_trait! {
     pub trait WriteBuf<(T)>: const (), () {
         fn write(&mut self, data: &[T]);
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError>;
@@ -33,7 +33,7 @@ declare_trait! {
     }
 }
 
-declare_trait! {
+declare_const_trait! {
     pub trait ReadBuf<(T)>: const (), () {
         fn read(&mut self, len: usize) -> &[T];
         unsafe fn get_continuous(&self, len: usize) -> &[T];
@@ -56,7 +56,7 @@ pub enum WriteBufferError {
     BufferFull,
 }
 
-declare_impl! {
+declare_const_impl! {
     (impl<T, S: Buf<T>> Buf<T> for &mut S),
     (impl<T, S: const Buf<T>> const Buf<T> for &mut S) {
         fn clear(&mut self) {
@@ -77,7 +77,7 @@ declare_impl! {
     }
 }
 
-declare_impl! {
+declare_const_impl! {
     (impl<T, S: ReadBuf<T>> ReadBuf<T> for &mut S),
     (impl<T, S: const ReadBuf<T>> const ReadBuf<T> for &mut S) {
         fn read(&mut self, len: usize) -> &[T] {
@@ -106,7 +106,7 @@ declare_impl! {
     }
 }
 
-declare_impl! {
+declare_const_impl! {
     (impl<T, S: WriteBuf<T>>  WriteBuf<T> for &mut S),
     (impl<T, S: const WriteBuf<T>> const WriteBuf<T> for &mut S) {
         fn write(&mut self, data: &[T]) {

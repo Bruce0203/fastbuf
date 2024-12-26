@@ -6,12 +6,12 @@ declare_const_impl! {
     (impl<T: Copy + Clone, const N: usize, A: Allocator> Chunk<T, N, A> for [T; N]),
     (impl<T: Copy + Clone, const N: usize, A: Allocator> const Chunk<T, N, A> for [T; N]) {
         #[inline(always)]
-        fn as_slice(&self) -> &[T; N] {
+        fn as_slice(&self) -> &[T] {
             self
         }
 
         #[inline(always)]
-        fn as_mut_slice(&mut self) -> &mut [T; N] {
+        fn as_mut_slice(&mut self) -> &mut [T] {
             self
         }
 

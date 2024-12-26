@@ -7,8 +7,8 @@ declare_const_trait! {
         fn new_in(alloc: A) -> Self;
         fn new_zeroed() -> Self;
         fn new() -> Self;
-        fn as_slice(&self) -> &[T; N];
-        fn as_mut_slice(&mut self) -> &mut [T; N];
+        fn as_slice(&self) -> &[T];
+        fn as_mut_slice(&mut self) -> &mut [T];
         fn as_ptr(&self) -> *const T;
         fn as_mut_ptr(&mut self) -> *mut T;
     }
@@ -37,6 +37,7 @@ declare_const_trait! {
     pub trait ReadBuf<(T)>: const (), () {
         fn read(&mut self, len: usize) -> &[T];
         unsafe fn get_continuous(&self, len: usize) -> &[T];
+        unsafe fn get_continuous_mut(&mut self, len: usize) -> &mut [T];
         fn remaining(&self) -> usize;
         fn advance(&mut self, len: usize);
         fn pos(&self) -> usize;
@@ -86,6 +87,10 @@ declare_const_impl! {
 
         unsafe fn get_continuous(&self, len: usize) -> &[T] {
             self.deref().get_continuous(len)
+        }
+
+        unsafe fn get_continuous_mut(&mut self, len: usize) -> &mut [T] {
+            self.deref_mut().get_continuous_mut(len)
         }
 
         fn remaining(&self) -> usize {

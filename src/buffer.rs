@@ -97,13 +97,13 @@ declare_const_impl! {
         }
 
         #[inline(always)]
-        fn as_slice(&self) -> &[T; N] {
-            self.chunk.as_slice()
+        fn as_slice(&self) -> &[T] {
+            unsafe { self.get_continuous(self.remaining()) }
         }
 
         #[inline(always)]
-         fn as_mut_slice(&mut self) -> &mut [T; N] {
-             self.chunk.as_mut_slice()
+         fn as_mut_slice(&mut self) -> &mut [T] {
+            unsafe { self.get_continuous_mut(self.remaining()) }
         }
 
         #[inline(always)]
@@ -232,6 +232,13 @@ declare_const_impl! {
             let filled_pos = self.filled_pos as usize;
             let slice_len = const_min!(len, filled_pos - pos);
             unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
+        }
+
+        unsafe fn get_continuous_mut(&mut self, len: usize) -> &mut [T] {
+            let pos = self.pos as usize;
+            let filled_pos = self.filled_pos as usize;
+            let slice_len = const_min!(len, filled_pos - pos);
+            unsafe { &mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(pos), slice_len) }
         }
 
         #[inline(always)]

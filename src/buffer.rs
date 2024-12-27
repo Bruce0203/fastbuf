@@ -27,9 +27,9 @@ pub struct Buffer<T, const N: usize, A: Allocator = ALLOC, C: ChunkBuilder<A> + 
 }
 
 #[cfg(target_pointer_width = "64")]
-type LenUint = u32;
+pub type LenUint = u32;
 #[cfg(target_pointer_width = "32")]
-type LenUint = u16;
+pub type LenUint = u16;
 
 #[cfg(feature = "impl_copy_for_buffer")]
 impl<T: Copy, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T> + Copy + Clone> Copy

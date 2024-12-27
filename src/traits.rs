@@ -27,7 +27,7 @@ declare_const_trait! {
 }
 
 declare_const_trait! {
-    pub trait WriteBuf<(T)>: const (Chunk<T>), () {
+    pub trait WriteBuf<(T)>: const (), (Chunk<T>) {
         fn write(&mut self, data: &[T]);
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError>;
         fn remaining_space(&self) -> usize;
@@ -37,7 +37,7 @@ declare_const_trait! {
 }
 
 declare_const_trait! {
-    pub trait ReadBuf<(T)>: const (Chunk<T>), () {
+    pub trait ReadBuf<(T)>: const (), (Chunk<T>) {
         fn read(&mut self, len: usize) -> &[T];
         unsafe fn get_continuous(&self, len: usize) -> &[T];
         unsafe fn get_continuous_mut(&mut self, len: usize) -> &mut [T];

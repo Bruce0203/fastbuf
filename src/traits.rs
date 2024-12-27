@@ -11,7 +11,7 @@ declare_const_trait! {
 }
 
 declare_const_trait! {
-    pub trait Chunk<(T, A: Allocator)>: const (), () {
+    pub trait Chunk<(T)>: const (), () {
         fn as_slice(&self) -> &[T];
         fn as_mut_slice(&mut self) -> &mut [T];
         fn as_ptr(&self) -> *const T;

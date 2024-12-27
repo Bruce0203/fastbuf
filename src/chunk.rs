@@ -24,8 +24,8 @@ declare_const_impl! {
 }
 
 declare_const_impl! {
-    (impl<T: Copy + Clone, const N: usize, A: Allocator> Chunk<T, A> for [T; N]),
-    (impl<T: Copy + Clone, const N: usize, A: Allocator> const Chunk<T, A> for [T; N]) {
+    (impl<T: Copy + Clone, const N: usize> Chunk<T> for [T; N]),
+    (impl<T: Copy + Clone, const N: usize> const Chunk<T> for [T; N]) {
         #[inline(always)]
         fn as_slice(&self) -> &[T] {
             self
@@ -71,8 +71,8 @@ declare_const_impl! {
 
 #[cfg(all(not(feature = "const-trait"), feature = "std"))]
 declare_const_impl! {
-    (impl<T: Copy + Clone, const N: usize, A: Allocator + Copy + Clone> Chunk<T, A> for Box<[T; N], A>),
-    (impl<T: Copy + Clone, const N: usize, A: Allocator + Copy + Clone> const Chunk<T, A> for Box<[T; N], A>) {
+    (impl<T: Copy + Clone, const N: usize, A: Allocator + Copy + Clone> Chunk<T> for Box<[T; N], A>),
+    (impl<T: Copy + Clone, const N: usize, A: Allocator + Copy + Clone> const Chunk<T> for Box<[T; N], A>) {
         #[inline(always)]
         default fn as_slice(&self) -> &[T] {
             &**self
@@ -118,8 +118,8 @@ declare_const_impl! {
 
 #[cfg(all(not(feature = "const-trait"), feature = "std"))]
 declare_const_impl! {
-    (impl<T: Copy + Clone, const N: usize> Chunk<T, std::alloc::Global> for Box<[T; N], std::alloc::Global>),
-    (impl<T: Copy + Clone, const N: usize> const Chunk<T, std::alloc::Global> for Box<[T; N], std::alloc::Global>) {
+    (impl<T: Copy + Clone, const N: usize> Chunk<T> for Box<[T; N], std::alloc::Global>),
+    (impl<T: Copy + Clone, const N: usize> const Chunk<T> for Box<[T; N], std::alloc::Global>) {
         #[inline(always)]
         default fn as_slice(&self) -> &[T] {
             &**self

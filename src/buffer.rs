@@ -75,6 +75,19 @@ declare_const_impl! {
             }
         }
 
+        declare_const_fn! {
+            #[inline(always)]
+            pub fn as_ptr(&self) -> *const T {
+                Chunk::as_ptr(self)
+            }
+        }
+
+        declare_const_fn! {
+            #[inline(always)]
+            pub fn as_mut_ptr(&mut self) -> *mut T {
+                Chunk::as_mut_ptr(self)
+            }
+        }
     }
 }
 

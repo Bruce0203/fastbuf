@@ -186,6 +186,11 @@ declare_const_impl! {
                 self.filled_pos = new_filled_pos as LenUint;
                 #[cfg(not(feature = "const-trait"))]
                 unsafe {
+                    let mut i = 0;
+                    while i < 100 {
+                    core::hint::black_box(120_u128);
+                    i += 1;
+                    }
                     self.chunk
                         .as_mut_slice()
                         .get_unchecked_mut(filled_pos..new_filled_pos)

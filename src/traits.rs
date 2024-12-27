@@ -3,10 +3,15 @@ use core::ops::{Deref, DerefMut};
 use std::alloc::Allocator;
 
 declare_const_trait! {
-    pub trait Chunk<(T, const N: usize, A: Allocator)>: const (), () {
+    pub trait ChunkBuilder<(A: Allocator)>: const(), () {
         fn new_in(alloc: A) -> Self;
         fn new_zeroed() -> Self;
         fn new() -> Self;
+    }
+}
+
+declare_const_trait! {
+    pub trait Chunk<(T, A: Allocator)>: const (), () {
         fn as_slice(&self) -> &[T];
         fn as_mut_slice(&mut self) -> &mut [T];
         fn as_ptr(&self) -> *const T;

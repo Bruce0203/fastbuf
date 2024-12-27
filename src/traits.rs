@@ -22,7 +22,6 @@ declare_const_trait! {
 declare_const_trait! {
     pub trait Buf<(T)>: const (ReadBuf<T>, WriteBuf<T>), () {
         fn clear(&mut self);
-        fn capacity(&self) -> usize;
     }
 }
 
@@ -33,6 +32,7 @@ declare_const_trait! {
         fn remaining_space(&self) -> usize;
         fn filled_pos(&self) -> usize;
         unsafe fn set_filled_pos(&mut self, filled_pos: usize);
+        fn capacity(&self) -> usize;
     }
 }
 
@@ -65,10 +65,6 @@ declare_const_impl! {
     (impl<T, S: const Buf<T> + const Chunk<T>> const Buf<T> for &mut S) {
         fn clear(&mut self) {
             self.deref_mut().clear()
-        }
-
-        fn capacity(&self) -> usize {
-            self.deref().capacity()
         }
     }
 }
@@ -127,6 +123,10 @@ declare_const_impl! {
 
         unsafe fn set_filled_pos(&mut self, filled_pos: usize) {
             self.deref_mut().set_filled_pos(filled_pos)
+        }
+
+        fn capacity(&self) -> usize {
+            self.deref().capacity()
         }
     }
 }

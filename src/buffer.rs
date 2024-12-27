@@ -172,11 +172,6 @@ declare_const_impl! {
             self.filled_pos = 0;
             self.pos = 0;
         }
-
-        #[inline(always)]
-        fn capacity(&self) -> usize {
-            N
-        }
     }
 }
 
@@ -235,8 +230,12 @@ declare_const_impl! {
         unsafe fn set_filled_pos(&mut self, filled_pos: usize) {
             self.filled_pos = filled_pos as LenUint;
         }
-    }
 
+        #[inline(always)]
+        fn capacity(&self) -> usize {
+            N
+        }
+    }
 }
 
 declare_const_impl! {

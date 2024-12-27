@@ -60,6 +60,21 @@ declare_const_impl! {
                 Chunk::new_zeroed()
             }
         }
+
+        declare_const_fn! {
+            #[inline(always)]
+            pub fn as_slice(&self) -> &[T] {
+                Chunk::as_slice(self)
+            }
+        }
+
+        declare_const_fn! {
+            #[inline(always)]
+            pub fn as_mut_slice(&mut self) -> &mut [T] {
+                Chunk::as_mut_slice(self)
+            }
+        }
+
     }
 }
 

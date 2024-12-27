@@ -22,14 +22,12 @@ declare_const_trait! {
 declare_const_trait! {
     pub trait Buf<(T)>: const (ReadBuf<T>, WriteBuf<T>), () {
         fn clear(&mut self);
-        fn as_ptr(&self) -> *const T;
-        fn as_mut_ptr(&mut self) -> *mut T;
         fn capacity(&self) -> usize;
     }
 }
 
 declare_const_trait! {
-    pub trait WriteBuf<(T)>: const (), () {
+    pub trait WriteBuf<(T)>: const (Chunk<T>), () {
         fn write(&mut self, data: &[T]);
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError>;
         fn remaining_space(&self) -> usize;
@@ -39,7 +37,7 @@ declare_const_trait! {
 }
 
 declare_const_trait! {
-    pub trait ReadBuf<(T)>: const (), () {
+    pub trait ReadBuf<(T)>: const (Chunk<T>), () {
         fn read(&mut self, len: usize) -> &[T];
         unsafe fn get_continuous(&self, len: usize) -> &[T];
         unsafe fn get_continuous_mut(&mut self, len: usize) -> &mut [T];
@@ -67,14 +65,6 @@ declare_const_impl! {
     (impl<T, S: const Buf<T>> const Buf<T> for &mut S) {
         fn clear(&mut self) {
             self.deref_mut().clear()
-        }
-
-        fn as_ptr(&self) -> *const T {
-            self.deref().as_ptr()
-        }
-
-        fn as_mut_ptr(&mut self) -> *mut T {
-            self.deref_mut().as_mut_ptr()
         }
 
         fn capacity(&self) -> usize {
@@ -117,7 +107,7 @@ declare_const_impl! {
 }
 
 declare_const_impl! {
-    (impl<T, S: WriteBuf<T>>  WriteBuf<T> for &mut S),
+    (impl<T, S: WriteBuf<T>> WriteBuf<T> for &mut S),
     (impl<T, S: const WriteBuf<T>> const WriteBuf<T> for &mut S) {
         fn write(&mut self, data: &[T]) {
             self.deref_mut().write(data)
@@ -137,6 +127,27 @@ declare_const_impl! {
 
         unsafe fn set_filled_pos(&mut self, filled_pos: usize) {
             self.deref_mut().set_filled_pos(filled_pos)
+        }
+    }
+}
+
+declare_const_impl! {
+    (impl<T, S: Chunk<T>> Chunk<T> for &mut S),
+    (impl<T, S: const Chunk<T>> const Chunk<T> for &mut S) {
+        fn as_slice(&self) ->  &[T] {
+            self.deref().as_slice()
+        }
+
+        fn as_mut_slice(&mut self) ->  &mut [T] {
+            self.deref_mut().as_mut_slice()
+        }
+
+        fn as_ptr(&self) ->  *const T {
+            self.deref().as_ptr()
+        }
+
+        fn as_mut_ptr(&mut self) ->  *mut T {
+            self.deref_mut().as_mut_ptr()
         }
     }
 }

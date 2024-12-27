@@ -19,12 +19,7 @@ pub type ByteBuffer<const N: usize, A = ALLOC> = Buffer<u8, N, A>;
 #[cfg(feature = "std")]
 pub type BoxedByteBuffer<const N: usize, A = ALLOC> = BoxedBuffer<u8, N, A>;
 
-pub struct Buffer<
-    T,
-    const N: usize,
-    A: Allocator = ALLOC,
-    C: ChunkBuilder<A> + Chunk<T> = [T; N],
-> {
+pub struct Buffer<T, const N: usize, A: Allocator = ALLOC, C: ChunkBuilder<A> + Chunk<T> = [T; N]> {
     chunk: C,
     filled_pos: LenUint,
     pos: LenUint,
@@ -179,16 +174,6 @@ declare_const_impl! {
         }
 
         #[inline(always)]
-        fn as_ptr(&self) -> *const T {
-            self.chunk.as_ptr()
-        }
-
-        #[inline(always)]
-        fn as_mut_ptr(&mut self) -> *mut T {
-            self.chunk.as_mut_ptr()
-        }
-
-        #[inline(always)]
         fn capacity(&self) -> usize {
             N
         }
@@ -321,7 +306,7 @@ impl<S: std::io::Read> ReadToBuf<u8> for S {
         let filled_pos = buf.filled_pos() as usize;
         let slice = unsafe {
             &mut *slice_from_raw_parts_mut(
-                buf.as_mut_ptr().wrapping_add(filled_pos),
+                Chunk::as_mut_ptr(buf).wrapping_add(filled_pos),
                 buf.capacity() - filled_pos,
             )
         };

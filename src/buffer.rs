@@ -12,18 +12,13 @@ type ALLOC = std::alloc::Global;
 type ALLOC = crate::EmptyAlloc;
 
 #[cfg(feature = "std")]
-pub type BoxedBuffer<T, const N: usize, A = ALLOC> = Buffer<T, N, A, Box<[u8; N]>>;
+pub type BoxedBuffer<S, A = ALLOC> = Buffer<S, A, Box<S>>;
 
-pub type ByteBuffer<const N: usize, A = ALLOC> = Buffer<u8, N, A>;
-
-#[cfg(feature = "std")]
-pub type BoxedByteBuffer<const N: usize, A = ALLOC> = BoxedBuffer<u8, N, A>;
-
-pub struct Buffer<T, const N: usize, A: Allocator = ALLOC, C: ChunkBuilder<A> + Chunk<T> = [T; N]> {
+pub struct Buffer<S, A: Allocator = ALLOC, C = S> {
     chunk: C,
     filled_pos: LenUint,
     pos: LenUint,
-    _marker: PhantomData<(A, T)>,
+    _marker: PhantomData<(A, S)>,
 }
 
 #[cfg(target_pointer_width = "64")]
@@ -38,8 +33,8 @@ impl<T: Copy, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T> + Copy
 }
 
 declare_const_impl! {
-    (impl<T, A: Allocator, const N: usize, C: ChunkBuilder<A> + Chunk<T>> Buffer<T, N, A, C>),
-    (impl<T, A: Allocator, const N: usize, C: const ChunkBuilder<A> + const Chunk<T>> Buffer<T, N, A, C>) {
+    (impl<T, A: Allocator, const N: usize, C: ChunkBuilder<A> + Chunk<T>> Buffer<[T; N], A, C>),
+    (impl<T, A: Allocator, const N: usize, C: const ChunkBuilder<A> + const Chunk<T>> Buffer<[T; N], A, C>) {
         declare_const_fn! {
             #[inline(always)]
             pub fn new_in(alloc: A) -> Self {
@@ -92,8 +87,8 @@ declare_const_impl! {
 }
 
 declare_const_impl! {
-    (impl<T, A: Allocator, const N: usize, C: ChunkBuilder<A> + Chunk<T>> ChunkBuilder<A> for Buffer<T, N, A, C>),
-    (impl<T, A: Allocator, const N: usize, C: const ChunkBuilder<A> + const Chunk<T>> const ChunkBuilder<A> for Buffer<T, N, A, C>) {
+    (impl<T, A: Allocator, const N: usize, C: ChunkBuilder<A> + Chunk<T>> ChunkBuilder<A> for Buffer<[T; N], A, C>),
+    (impl<T, A: Allocator, const N: usize, C: const ChunkBuilder<A> + const Chunk<T>> const ChunkBuilder<A> for Buffer<[T; N], A, C>) {
         #[inline(always)]
         fn new_in(alloc: A) -> Self {
             Self {
@@ -127,8 +122,8 @@ declare_const_impl! {
 }
 
 declare_const_impl! {
-    (impl<T, A: Allocator, const N: usize, C: ChunkBuilder<A> +  Chunk<T>> Chunk<T> for Buffer<T, N, A, C>),
-    (impl<T, A: Allocator, const N: usize, C: const ChunkBuilder<A> + const Chunk<T>> const Chunk<T> for Buffer<T, N, A, C>) {
+    (impl<T, A: Allocator, const N: usize, C: ChunkBuilder<A> +  Chunk<T>> Chunk<T> for Buffer<[T; N], A, C>),
+    (impl<T, A: Allocator, const N: usize, C: const ChunkBuilder<A> + const Chunk<T>> const Chunk<T> for Buffer<[T; N], A, C>) {
         #[inline(always)]
         fn as_slice(&self) -> &[T] {
             unsafe { self.get_continuous(self.remaining()) }
@@ -152,7 +147,7 @@ declare_const_impl! {
 }
 
 impl<T, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T> + Clone> Clone
-    for Buffer<T, N, A, C>
+    for Buffer<[T; N], A, C>
 {
     fn clone(&self) -> Self {
         Self {
@@ -165,8 +160,8 @@ impl<T, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T> + Clone> Clo
 }
 
 declare_const_impl! {
-    (impl<T: Copy, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T>> Buf<T> for Buffer<T, N, A, C>),
-    (impl<T: Copy, const N: usize, A: Allocator, C: const ChunkBuilder<A> + const Chunk<T>> const Buf<T> for Buffer<T, N, A, C>) {
+    (impl<T: Copy, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T>> Buf<T> for Buffer<[T; N], A, C>),
+    (impl<T: Copy, const N: usize, A: Allocator, C: const ChunkBuilder<A> + const Chunk<T>> const Buf<T> for Buffer<[T; N], A, C>) {
         #[inline(always)]
         fn clear(&mut self) {
             self.filled_pos = 0;
@@ -176,12 +171,14 @@ declare_const_impl! {
 }
 
 declare_const_impl! {
-    (impl<T: Copy, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T>> WriteBuf<T> for Buffer<T, N, A, C>),
-    (impl<T: Copy, const N: usize, A: Allocator, C: const ChunkBuilder<A> + const Chunk<T>> const WriteBuf<T> for Buffer<T, N, A, C>) {
+    (impl<T: Copy, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T>> WriteBuf<T> for Buffer<[T; N], A, C>),
+    (impl<T: Copy, const N: usize, A: Allocator, C: const ChunkBuilder<A> + const Chunk<T>> const WriteBuf<T> for Buffer<[T; N], A, C>) {
         #[inline(always)]
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError> {
             let filled_pos = self.filled_pos as usize;
             let new_filled_pos = filled_pos + data.len();
+            if new_filled_pos <= N {
+                self.filled_pos = new_filled_pos as LenUint;
                 #[cfg(not(feature = "const-trait"))]
                 unsafe {
                     self.chunk
@@ -195,6 +192,9 @@ declare_const_impl! {
                     (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos),data.len())).copy_from_slice(data);
                 }
                 Ok(())
+            } else {
+                Err(WriteBufferError::BufferFull)
+            }
         }
 
         #[inline(always)]
@@ -234,12 +234,12 @@ declare_const_impl! {
 }
 
 declare_const_impl! {
-    (impl<T, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T>> ReadBuf<T> for Buffer<T, N, A, C>),
-    (impl<T, const N: usize, A: Allocator, C: const ChunkBuilder<A> + const Chunk<T>> const ReadBuf<T> for Buffer<T, N, A, C>) {
+    (impl<T, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T>> ReadBuf<T> for Buffer<[T; N], A, C>),
+    (impl<T, const N: usize, A: Allocator, C: const ChunkBuilder<A> + const Chunk<T>> const ReadBuf<T> for Buffer<[T; N], A, C>) {
         #[inline(always)]
         fn read(&mut self, len: usize) -> &[T] {
             let pos = self.pos as usize;
-            let slice_len = len;
+            let slice_len = const_min!(len, self.filled_pos as usize - pos);
             let new_pos = pos + slice_len;
             self.pos = new_pos as LenUint;
             unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }
@@ -315,8 +315,8 @@ impl<S: std::io::Read> ReadToBuf<u8> for S {
 
 #[cfg(feature = "std")]
 declare_const_impl! {
-    (impl<const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<u8>> std::io::Write for Buffer<u8, N, A, C>),
-    (impl<const N: usize, A: Allocator, C: const ChunkBuilder<A> + const Chunk<u8>> std::io::Write for Buffer<u8, N, A, C>) {
+    (impl<const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<u8>> std::io::Write for Buffer<[u8; N], A, C>),
+    (impl<const N: usize, A: Allocator, C: const ChunkBuilder<A> + const Chunk<u8>> std::io::Write for Buffer<[u8; N], A, C>) {
         #[inline(always)]
         fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
             let backup_filled_pos = self.filled_pos();
@@ -333,8 +333,8 @@ declare_const_impl! {
 }
 
 declare_const_impl! {
-    (impl<T: Copy + Debug, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T>> Debug for Buffer<T, N, A, C>),
-    (impl<T: Copy + Debug, const N: usize, A: Allocator, C: const ChunkBuilder<A> + const Chunk<T>> Debug for Buffer<T, N, A, C>) {
+    (impl<T: Copy + Debug, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T>> Debug for Buffer<[T; N], A, C>),
+    (impl<T: Copy + Debug, const N: usize, A: Allocator, C: const ChunkBuilder<A> + const Chunk<T>> Debug for Buffer<[T; N], A, C>) {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             self.chunk.as_slice()[self.pos()..self.filled_pos()].fmt(f)
         }
@@ -361,9 +361,9 @@ mod tests {
                 assert_eq!(debug_str, "[116, 101, 115, 116]");
             }
         }
-        test!(ByteBuffer::<16>::new());
+        test!(Buffer::<[u8; 16]>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16>::new());
+        test!(BoxedBuffer::<[u8; 16]>::new());
     }
 
     #[test]
@@ -380,9 +380,10 @@ mod tests {
             assert_eq!(read_data, data);
             }
         }
-        test!(ByteBuffer::<16>::new());
+
+        test!(Buffer::<[u8; 16]>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16>::new());
+        test!(BoxedBuffer::<[u8; 16]>::new());
     }
 
     #[test]
@@ -390,16 +391,15 @@ mod tests {
         macro_rules! test {
             ($($buf:tt)*) => {
                 let mut buffer = $($buf)*;
-            let data = b"hello";
-
-            assert!(buffer.try_write(data).is_ok());
-            assert_eq!(buffer.remaining_space(), 11);
+                let data = b"hello";
+                assert!(buffer.try_write(data).is_ok());
+                assert_eq!(buffer.remaining_space(), 11);
+            }
         }
-        }
 
-        test!(ByteBuffer::<16>::new());
+        test!(Buffer::<[u8; 16]>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16>::new());
+        test!(BoxedBuffer::<[u8; 16]>::new());
     }
 
     #[test]
@@ -412,11 +412,12 @@ mod tests {
             assert!(buffer.try_write(data).is_err());
             assert_eq!(buffer.remaining_space(), 8);
             buffer.try_write(&[]).unwrap();
-        }}
+        }
+        }
 
-        test!(ByteBuffer::<8>::new());
+        test!(Buffer::<[u8; 8]>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<8>::new());
+        test!(BoxedBuffer::<[u8; 8]>::new());
     }
 
     #[test]
@@ -432,9 +433,9 @@ mod tests {
             assert_eq!(buffer.remaining(), 0);
         }}
 
-        test!(ByteBuffer::<16>::new());
+        test!(Buffer::<[u8; 16]>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16>::new());
+        test!(BoxedBuffer::<[u8; 16]>::new());
     }
 
     #[test]
@@ -452,9 +453,9 @@ mod tests {
             assert_eq!(remaining_data, b"world");
         }}
 
-        test!(ByteBuffer::<16>::new());
+        test!(Buffer::<[u8; 16]>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16>::new());
+        test!(BoxedBuffer::<[u8; 16]>::new());
     }
 
     #[test]
@@ -469,15 +470,15 @@ mod tests {
             assert_eq!(continuous_data, b"hello");
         }}
 
-        test!(ByteBuffer::<16>::new());
+        test!(Buffer::<[u8; 16]>::new());
         #[cfg(all(not(feature = "const-trait"), feature = "std"))]
-        test!(BoxedByteBuffer::<16>::new());
+        test!(BoxedBuffer::<[u8; 16]>::new());
     }
 
     #[cfg(feature = "const-trait")]
     #[test]
     fn test_clone() {
-        const BUF: ByteBuffer<1000> = Buffer::<u8, 1000, std::alloc::Global>::new_zeroed();
+        const BUF: Buffer<[u8; 1000]> = Buffer::<[u8; 1000], std::alloc::Global>::new_zeroed();
         let cloned_buf = BUF.clone();
         assert_eq!(BUF.as_slice(), cloned_buf.as_slice());
     }
@@ -486,7 +487,7 @@ mod tests {
 
     #[bench]
     fn bench_buffer_try_write(b: &mut Bencher) {
-        let ref mut buffer: ByteBuffer<N> = Buffer::new();
+        let ref mut buffer: Buffer<[u8; N]> = Buffer::new();
         let src: &[u8] = &vec![0; N];
         black_box(&src);
         b.iter(|| {
@@ -498,7 +499,7 @@ mod tests {
 
     #[bench]
     fn bench_buffer_write(b: &mut Bencher) {
-        let ref mut buffer: ByteBuffer<N> = Buffer::new();
+        let ref mut buffer: Buffer<[u8; N]> = Buffer::new();
         let src: &[u8] = &vec![0; N];
         black_box(&src);
         b.iter(|| {
@@ -510,7 +511,7 @@ mod tests {
 
     #[bench]
     fn bench_buffer_read(b: &mut Bencher) {
-        let ref mut buffer: ByteBuffer<N> = Buffer::new();
+        let ref mut buffer: Buffer<[u8; N]> = Buffer::new();
         let src: &[u8] = &vec![0; N];
         buffer.write(src);
         b.iter(|| {
@@ -523,7 +524,7 @@ mod tests {
     #[bench]
     fn bench_buffer_new(b: &mut Bencher) {
         b.iter(|| {
-            let ref mut buffer: ByteBuffer<N> = Buffer::new();
+            let ref mut buffer: Buffer<[u8; N]> = Buffer::new();
             black_box(&buffer);
         });
     }

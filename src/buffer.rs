@@ -28,7 +28,7 @@ pub type LenUint = u16;
 
 #[cfg(feature = "impl_copy_for_buffer")]
 impl<T: Copy, const N: usize, A: Allocator, C: ChunkBuilder<A> + Chunk<T> + Copy + Clone> Copy
-    for Buffer<T, N, A, C>
+    for Buffer<[T; N], A, C>
 {
 }
 

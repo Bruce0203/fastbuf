@@ -182,8 +182,6 @@ declare_const_impl! {
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError> {
             let filled_pos = self.filled_pos as usize;
             let new_filled_pos = filled_pos + data.len();
-            if new_filled_pos <= N {
-                self.filled_pos = new_filled_pos as LenUint;
                 #[cfg(not(feature = "const-trait"))]
                 unsafe {
                     self.chunk
@@ -197,9 +195,6 @@ declare_const_impl! {
                     (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos),data.len())).copy_from_slice(data);
                 }
                 Ok(())
-            } else {
-                Err(WriteBufferError::BufferFull)
-            }
         }
 
         #[inline(always)]
@@ -244,7 +239,7 @@ declare_const_impl! {
         #[inline(always)]
         fn read(&mut self, len: usize) -> &[T] {
             let pos = self.pos as usize;
-            let slice_len = const_min!(len, self.filled_pos as usize - pos);
+            let slice_len = len;
             let new_pos = pos + slice_len;
             self.pos = new_pos as LenUint;
             unsafe { &*slice_from_raw_parts(self.chunk.as_ptr().wrapping_add(pos), slice_len) }

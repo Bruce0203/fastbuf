@@ -14,11 +14,10 @@ type ALLOC = crate::EmptyAlloc;
 #[cfg(feature = "std")]
 pub type BoxedBuffer<S, A = ALLOC> = Buffer<S, A, Box<S>>;
 
-#[repr(C)]
 pub struct Buffer<S, A: Allocator = ALLOC, C = S> {
+    chunk: C,
     filled_pos: LenUint,
     pos: LenUint,
-    chunk: C,
     _marker: PhantomData<(A, S)>,
 }
 

@@ -189,7 +189,7 @@ declare_const_impl! {
 
                 #[cfg(feature = "const-trait")]
                 unsafe {
-                    (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos),data.len())).copy_from_slice(data);
+                    (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr(),data.len())).copy_from_slice(data);
                 }
                 Ok(())
             } else {

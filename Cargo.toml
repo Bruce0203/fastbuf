@@ -16,4 +16,3 @@ default = ["std"]
 std = []
 const-trait = []
 impl_copy_for_buffer = []
-

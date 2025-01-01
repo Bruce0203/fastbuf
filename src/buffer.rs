@@ -2,8 +2,8 @@ use core::{fmt::Debug, marker::PhantomData, ptr::slice_from_raw_parts};
 use std::{alloc::Allocator, ptr::slice_from_raw_parts_mut};
 
 use crate::{
-    const_min, declare_const_fn, declare_const_impl, Buf, Chunk, ChunkBuilder, ReadBuf, ReadToBuf,
-    WriteBuf, WriteBufferError,
+    const_min, declare_const_fn, declare_const_impl, unsafe_wild_copy, Buf, Chunk, ChunkBuilder,
+    ReadBuf, ReadToBuf, WriteBuf, WriteBufferError,
 };
 
 #[cfg(feature = "std")]
@@ -191,6 +191,21 @@ declare_const_impl! {
                 unsafe {
                     (&mut *slice_from_raw_parts_mut(self.chunk.as_mut_ptr().wrapping_add(filled_pos),data.len())).copy_from_slice(data);
                 }
+                Ok(())
+            } else {
+                Err(WriteBufferError::BufferFull)
+            }
+        }
+
+        #[inline(always)]
+        fn try_write_fast<const LEN: usize>(&mut self, data: &[T; LEN]) -> Result<(), WriteBufferError> {
+            let filled_pos = self.filled_pos as usize;
+            let new_filled_pos = filled_pos + data.len();
+            if new_filled_pos <= N {
+                let src_ptr = data.as_ptr();
+                let dst_ptr = self.as_mut_ptr().wrapping_add(self.filled_pos as usize);
+                self.filled_pos = new_filled_pos as LenUint;
+                unsafe { unsafe_wild_copy!([T; LEN], src_ptr, dst_ptr, LEN); }
                 Ok(())
             } else {
                 Err(WriteBufferError::BufferFull)
@@ -421,6 +436,40 @@ mod tests {
     }
 
     #[test]
+    fn test_try_write_fast_success() {
+        macro_rules! test {
+            ($($buf:tt)*) => {
+                let mut buffer = $($buf)*;
+                let data = b"hello";
+                assert!(buffer.try_write_fast(data).is_ok());
+                assert_eq!(buffer.remaining_space(), 11);
+            }
+        }
+
+        test!(Buffer::<[u8; 16]>::new());
+        #[cfg(all(not(feature = "const-trait"), feature = "std"))]
+        test!(BoxedBuffer::<[u8; 16]>::new());
+    }
+
+    #[test]
+    fn test_try_write_fast_fail() {
+        macro_rules! test {
+            ($($buf:tt)*) => {
+                let mut buffer = $($buf)*;
+            let data = b"too long data";
+
+            assert!(buffer.try_write_fast(data).is_err());
+            assert_eq!(buffer.remaining_space(), 8);
+            buffer.try_write(&[]).unwrap();
+        }
+        }
+
+        test!(Buffer::<[u8; 8]>::new());
+        #[cfg(all(not(feature = "const-trait"), feature = "std"))]
+        test!(BoxedBuffer::<[u8; 8]>::new());
+    }
+
+    #[test]
     fn test_clear() {
         macro_rules! test {
             ($($buf:tt)*) => {
@@ -483,7 +532,7 @@ mod tests {
         assert_eq!(BUF.as_slice(), cloned_buf.as_slice());
     }
 
-    const N: usize = 1000;
+    const N: usize = 4;
 
     #[bench]
     fn bench_buffer_try_write(b: &mut Bencher) {
@@ -491,8 +540,10 @@ mod tests {
         let src: &[u8] = &vec![0; N];
         black_box(&src);
         b.iter(|| {
-            unsafe { buffer.set_filled_pos(0) };
-            let _ = black_box(&buffer.try_write(&src));
+            for _i in 0..100 {
+                unsafe { buffer.set_filled_pos(0) };
+                let _ = black_box(&buffer.try_write(&src));
+            }
         });
         black_box(&buffer);
     }
@@ -503,12 +554,29 @@ mod tests {
         let src: &[u8] = &vec![0; N];
         black_box(&src);
         b.iter(|| {
-            unsafe { buffer.set_filled_pos(0) };
-            let _ = black_box(&buffer.write(&src));
+            for _i in 0..100 {
+                unsafe { buffer.set_filled_pos(0) };
+                let _ = black_box(&buffer.write(&src));
+            }
         });
         black_box(&buffer);
     }
 
+    #[bench]
+    fn bench_buffer_try_write_fast(b: &mut Bencher) {
+        let ref mut buffer: Buffer<[u8; N]> = Buffer::new();
+        let src = [0_u8; N];
+        black_box(&src);
+        b.iter(|| {
+            for _i in 0..100 {
+                unsafe { buffer.set_filled_pos(0) };
+                let _ = black_box(&buffer.try_write_fast(&src));
+            }
+        });
+        black_box(&buffer);
+    }
+
+    #[ignore]
     #[bench]
     fn bench_buffer_read(b: &mut Bencher) {
         let ref mut buffer: Buffer<[u8; N]> = Buffer::new();
@@ -519,13 +587,5 @@ mod tests {
             let _ = black_box(&buffer.read(black_box(N)));
         });
         black_box(&buffer);
-    }
-
-    #[bench]
-    fn bench_buffer_new(b: &mut Bencher) {
-        b.iter(|| {
-            let ref mut buffer: Buffer<[u8; N]> = Buffer::new();
-            black_box(&buffer);
-        });
     }
 }

@@ -29,6 +29,7 @@ declare_const_trait! {
     pub trait WriteBuf<(T)>: const (), (Chunk<T>) {
         fn write(&mut self, data: &[T]);
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError>;
+        fn try_write_fast<const LEN: usize>(&mut self, data: &[T; LEN]) -> Result<(), WriteBufferError>;
         fn remaining_space(&self) -> usize;
         fn filled_pos(&self) -> usize;
         unsafe fn set_filled_pos(&mut self, filled_pos: usize);
@@ -111,6 +112,10 @@ declare_const_impl! {
 
         fn try_write(&mut self, data: &[T]) -> Result<(), WriteBufferError> {
             self.deref_mut().try_write(data)
+        }
+
+        fn try_write_fast<const LEN: usize>(&mut self, data: &[T; LEN]) -> Result<(), WriteBufferError> {
+            self.deref_mut().try_write_fast::<LEN>(data)
         }
 
         fn remaining_space(&self) -> usize {

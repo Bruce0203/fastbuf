@@ -106,6 +106,10 @@ pub(crate) mod macros {
         };
     }
 }
+fn asdf() {
+    let v = (&0_u8) as *const u8;
+    
+}
 
 /// Copies `N` or `n` bytes from `src` to `dst` depending on if `src` lies within a memory page.
 /// https://stackoverflow.com/questions/37800739/is-it-safe-to-read-past-the-end-of-a-buffer-within-the-same-page-on-x86-and-x64
@@ -120,7 +124,8 @@ macro_rules! unsafe_wild_copy {
 
         let page_size = 4096;
         let read_size = core::mem::size_of::<[$T; $N]>();
-        let within_page = $src as usize & (page_size - 1) < (page_size - read_size) && cfg!(all(
+        let src_ptr_as_usize = $src.byte_offset_from($src) as usize;
+        let within_page = src_ptr_as_usize & (page_size - 1) < (page_size - read_size) && cfg!(all(
             // Miri doesn't like this.
             not(miri),
             // cargo fuzz's memory sanitizer complains about buffer overrun.

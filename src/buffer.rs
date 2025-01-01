@@ -203,7 +203,7 @@ declare_const_impl! {
             let new_filled_pos = filled_pos + data.len();
             if new_filled_pos <= N {
                 let src_ptr = data.as_ptr();
-                let dst_ptr = self.as_mut_ptr().wrapping_add(self.filled_pos as usize);
+                let dst_ptr = self.as_mut_ptr().wrapping_add(filled_pos as usize);
                 self.filled_pos = new_filled_pos as LenUint;
                 unsafe { unsafe_wild_copy!([T; LEN], src_ptr, dst_ptr, LEN); }
                 Ok(())
@@ -360,6 +360,8 @@ declare_const_impl! {
 #[cfg(test)]
 #[cfg(feature = "std")]
 mod tests {
+    use std::time::Instant;
+
     use test::{black_box, Bencher};
 
     use super::*;
@@ -409,6 +411,7 @@ mod tests {
                 let data = b"hello";
                 assert!(buffer.try_write(data).is_ok());
                 assert_eq!(buffer.remaining_space(), 11);
+                assert_eq!(buffer.read(5), data);
             }
         }
 
@@ -443,6 +446,7 @@ mod tests {
                 let data = b"hello";
                 assert!(buffer.try_write_fast(data).is_ok());
                 assert_eq!(buffer.remaining_space(), 11);
+                assert_eq!(buffer.read(5), data);
             }
         }
 
@@ -532,7 +536,7 @@ mod tests {
         assert_eq!(BUF.as_slice(), cloned_buf.as_slice());
     }
 
-    const N: usize = 4;
+    const N: usize = 14;
 
     #[bench]
     fn bench_buffer_try_write(b: &mut Bencher) {
@@ -540,10 +544,8 @@ mod tests {
         let src: &[u8] = &vec![0; N];
         black_box(&src);
         b.iter(|| {
-            for _i in 0..100 {
-                unsafe { buffer.set_filled_pos(0) };
-                let _ = black_box(&buffer.try_write(&src));
-            }
+            unsafe { buffer.set_filled_pos(0) };
+            let _ = black_box(&buffer.try_write(&src));
         });
         black_box(&buffer);
     }
@@ -554,10 +556,8 @@ mod tests {
         let src: &[u8] = &vec![0; N];
         black_box(&src);
         b.iter(|| {
-            for _i in 0..100 {
-                unsafe { buffer.set_filled_pos(0) };
-                let _ = black_box(&buffer.write(&src));
-            }
+            unsafe { buffer.set_filled_pos(0) };
+            let _ = black_box(&buffer.write(&src));
         });
         black_box(&buffer);
     }
@@ -565,14 +565,14 @@ mod tests {
     #[bench]
     fn bench_buffer_try_write_fast(b: &mut Bencher) {
         let ref mut buffer: Buffer<[u8; N]> = Buffer::new();
-        let src = [0_u8; N];
+        let src = [Instant::now().elapsed().as_secs() as u8 + 1; N];
         black_box(&src);
         b.iter(|| {
-            for _i in 0..100 {
-                unsafe { buffer.set_filled_pos(0) };
-                let _ = black_box(&buffer.try_write_fast(&src));
-            }
+            unsafe { buffer.set_filled_pos(0) };
+            let _ = black_box(&buffer.try_write_fast::<N>(&src));
         });
+        assert_eq!(src[0], buffer.read(1)[0]);
+        black_box(&src);
         black_box(&buffer);
     }
 
